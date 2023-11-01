@@ -3,7 +3,7 @@
 #include <string>
 
 #define log             Serial
-#define crsfSerial      Serial2
+#define crsfSerial      Serial1
 #if defined SEND_SBUS
   #define sbusSerial    Serial2
 #endif
