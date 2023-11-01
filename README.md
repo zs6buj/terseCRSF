@@ -24,14 +24,21 @@ A vscode/platformio demo example can be found in the examples folder. Simply ope
 
 Activate these demo macros in the header to show how the decoded data members of the CRSF class can be accessed. For each sensor ID type, the pertinent data values will be printed out on the monitor.
 
-//=========  D E M O   M A C R O S  ========
 #define DEMO_PWM_VALUES
+
 #define DEMO_SBUS
+
 #define DEMO_CRSF_GPS
+
 #define DEMO_CRSF_BATTERY
+
 #define DEMO_CRSF_ATTITUDE
+
 #define DEMO_CRSF_FLIGHT_MODE
 
+
 These two macros may be helpful, and are self explanatory, and :
+
 #define SHOW_BUFFER
+
 #define SHOW_LOOP_PERIOD
