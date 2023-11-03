@@ -5,7 +5,7 @@
 bool CRSF::initialise()
 {
   log.print("\nterseCRSF by zs6buj");
-  log.printf(" version:%d.%02d.%02d\n", MAJOR_VERSION, MINOR_VERSION, PATCH_LEVEL);
+  log.printf(" version:%d.%02d.%02d\n", MAJOR_VER, MINOR_VER, PATCH_LEV);
 #if defined RC_BUILD
   log.println("RC_BUILD");
 #else
