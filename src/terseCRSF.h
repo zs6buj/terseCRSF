@@ -14,8 +14,8 @@
 #endif
 
 #define MAJOR_VERSION      0
-#define MINOR_VERSION      0
-#define PATCH_LEVEL        1 
+#define MINOR_VER          0
+#define PATCH_LEV          1 
 
 //=========  D E M O   M A C R O S  ========
 #define DEMO_PWM_VALUES
