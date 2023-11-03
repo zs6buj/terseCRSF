@@ -13,7 +13,7 @@
   //#define SEND_SBUS
 #endif
 
-#define MAJOR_VERSION      0
+#define MAJOR_VER          0
 #define MINOR_VER          0
 #define PATCH_LEV          1 
 
