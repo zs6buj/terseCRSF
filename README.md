@@ -20,7 +20,7 @@ In the RC build, by enabling the #define SEND_SBUS macro, an SBUS signal can be 
 
 In addition, the header file contains pin numbers and other setup information pertinent to CRSF and platform setup. They should work as they stand, but the user may wish to make changes here and there once the basic example demo is shown to work.
 
-A vscode/platformio demo example can be found in the examples folder. Simply open the folder, build, flash and run.
+Vscode/platformio, and Arduino, examples can be found in the examples folder. 
 
 Activate these demo macros in the header to show how the decoded data members of the CRSF class can be accessed. For each sensor ID type, the pertinent data values will be printed out on the monitor.
 
