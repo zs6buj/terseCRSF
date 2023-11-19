@@ -41,9 +41,9 @@ void loop()
 #else   // TELEMETRY BUILD
     uint8_t crsf_id = crsf.decodeTelemetry(&*crsf.crsf_buf);
 
-    if (crsf_id == GPS_ID) 
-#if defined DEMO_CRSF_GPS    
+    if (crsf_id == GPS_ID)    
     {
+#if defined DEMO_CRSF_GPS       
       log.print("GPS id:");
       crsf.printByte(crsf_id, ' ');
       log.printf("lat:%2.7f  lon:%2.7f", crsf.gpsF_lat, crsf.gpsF_lon);

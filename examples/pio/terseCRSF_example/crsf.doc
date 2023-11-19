@@ -1,0 +1,114 @@
+/*
+CRSF frame has the structure:
+<Device address> <Frame length> <Type> <Payload> <CRC>
+
+Device address: (uint8_t)
+Frame length:   length in  bytes including Type (uint8_t)
+Type:           (uint8_t)      
+Payload:        various types  
+CRC:            (uint8_t), crc of <Type> and <Payload>
+*/
+
+/*
+0x02 GPS
+Payload:
+int32_t     Latitude ( degree / 10`000`000 )
+int32_t     Longitude (degree / 10`000`000 )
+uint16_t    Groundspeed ( km/h / 10 )
+uint16_t    GPS heading ( degree / 100 )
+uint16      Altitude ( meter ­1000m offset )
+uint8_t     Satellites in use ( counter )
+*/
+/*
+0x02 GPS
+Payload:
+int32_t     Latitude ( degree / 10`000`000 )
+int32_t     Longitude (degree / 10`000`000 )
+uint16_t    Groundspeed ( km/h / 10 )
+uint16_t    GPS heading ( degree / 100 )
+uint16      Altitude ( meter ­1000m offset )
+uint8_t     Satellites in use ( counter )
+*/
+/*
+0x07 Vario sensor
+Payload:
+int16      Vertical speed ( cm/s )
+*/
+/*
+0x08 Battery sensor
+Payload:
+uint16_t    Voltage ( mV * 100 )
+uint16_t    Current ( mA * 100 )
+uint24_t    Capacity ( mAh )
+uint8_t     Battery remaining ( percent )
+*/
+
+/*
+0x1E Attitude
+Payload:
+int16_t     Pitch angle ( rad / 10000 )
+int16_t     Roll angle ( rad / 10000 )
+int16_t     Yaw angle ( rad / 10000 )
+*/
+static void crsfFrameFlightMode(sbuf_t *dst)
+{
+    // just do "OK" for the moment as a placeholder
+    // write zero for frame length, since we don't know it yet
+    uint8_t *lengthPtr = sbufPtr(dst);
+    sbufWriteU8(dst, 0);
+    crsfSerialize8(dst, CRSF_FRAMETYPE_FLIGHT_MODE);
+
+    // use same logic as OSD, so telemetry displays same flight text as OSD when armed
+    const char *flightMode = "OK";
+    if (ARMING_FLAG(ARMED)) {
+        if (STATE(AIRMODE_ACTIVE)) {
+            flightMode = "AIR";
+        } else {
+            flightMode = "ACRO";
+        }
+        if (FLIGHT_MODE(FAILSAFE_MODE)) {
+            flightMode = "!FS!";
+        } else if (IS_RC_MODE_ACTIVE(BOXHOMERESET) && !FLIGHT_MODE(NAV_RTH_MODE) && !FLIGHT_MODE(NAV_WP_MODE)) {
+            flightMode = "HRST";
+        } else if (FLIGHT_MODE(MANUAL_MODE)) {
+            flightMode = "MANU";
+        } else if (FLIGHT_MODE(NAV_RTH_MODE)) {
+            flightMode = "RTH";
+        } else if (FLIGHT_MODE(NAV_POSHOLD_MODE)) {
+            flightMode = "HOLD";
+        } else if (FLIGHT_MODE(NAV_COURSE_HOLD_MODE) && FLIGHT_MODE(NAV_ALTHOLD_MODE)) {
+            flightMode = "CRUZ";
+        } else if (FLIGHT_MODE(NAV_COURSE_HOLD_MODE)) {
+            flightMode = "CRSH";
+        } else if (FLIGHT_MODE(NAV_WP_MODE)) {
+            flightMode = "WP";
+        } else if (FLIGHT_MODE(NAV_ALTHOLD_MODE)) {
+            flightMode = "AH";
+        } else if (FLIGHT_MODE(ANGLE_MODE)) {
+            flightMode = "ANGL";
+        } else if (FLIGHT_MODE(HORIZON_MODE)) {
+            flightMode = "HOR";
+        } else if (FLIGHT_MODE(ANGLEHOLD_MODE)) {
+            flightMode = "ANGH";
+        }
+#ifdef USE_GPS
+    } else if (feature(FEATURE_GPS) && navConfig()->general.flags.extra_arming_safety && (!STATE(GPS_FIX) || !STATE(GPS_FIX_HOME))) {
+        flightMode = "WAIT"; // Waiting for GPS lock
+#endif
+    } else if (isArmingDisabled()) {
+        flightMode = "!ERR";
+    }
+
+/*
+0x29 Device Info
+Payload:
+uint8_t     Destination
+uint8_t     Origin
+char[]      Device Name ( Null terminated string )
+uint32_t    Null Bytes
+uint32_t    Null Bytes
+uint32_t    Null Bytes
+uint8_t     255 (Max MSP Parameter)
+uint8_t     0x01 (Parameter version 1)
+*/
+

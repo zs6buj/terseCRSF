@@ -2,7 +2,7 @@
 
 Eric Stockenstrom, November 2023
 
-This library came about because I simply could not find a quick and easy CRSF/ELRS decoding library. While the Betaflight and the other mainstream libraries are exemplary in their design and execution, they are tightly integrated into multi-platform, multi-protocol designs, and require time (often in short supply) to research and implement. The idea here was to create a terse library to read and decode the essentials quickly. This code was written at short notice and has not been thoroughly tested, so it comes with the usual caveats. The scope included only basic telemetry and RC values, and no attempt was made at this time to decode advanced features like routing, device control and the like. 
+This library came about because I simply could not find a quick and easy CRSF/ELRS decoding library. While the Betaflight and the other mainstream libraries are exemplary in their design and execution, they are tightly integrated into multi-platform, multi_protocol designs, and require time (often in short supply) to research and implement. The idea here was to create a terse library to read and decode the essentials quickly. This code was written at short notice and has not been thoroughly tested, so it comes with the usual caveats. The scope included only basic telemetry and RC values, and no attempt was made at this time to decode advanced features like routing, device control and the like. 
 
 Please report issues, and PRs are encouraged.
 
@@ -25,15 +25,20 @@ A vscode/platformio demo example can be found in the examples folder. Simply ope
 Activate these demo macros in the header to show how the decoded data members of the CRSF class can be accessed. For each sensor ID type, the pertinent data values will be printed out on the monitor.
 
 #define DEMO_PWM_VALUES
+
 #define DEMO_SBUS
+
 #define DEMO_CRSF_GPS
+
 #define DEMO_CRSF_BATTERY
+
 #define DEMO_CRSF_ATTITUDE
+
 #define DEMO_CRSF_FLIGHT_MODE
-#define DEMO_CRSF_LINK 
+
 
 These two macros may be helpful, and are self explanatory, and :
 
 #define SHOW_BUFFER
-#define SHOW_LINK_STATS
+
 #define SHOW_LOOP_PERIOD

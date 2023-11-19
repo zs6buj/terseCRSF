@@ -22,6 +22,8 @@ void setup() {
 
 void loop() 
 {
+  crsf.printLinkStats();    // optional
+
   if (crsf.readCrsfFrame(crsf.frame_lth))  
   {
 #if defined SHOW_LOOP_PERIOD
@@ -42,8 +44,8 @@ void loop()
     uint8_t crsf_id = crsf.decodeTelemetry(&*crsf.crsf_buf);
 
     if (crsf_id == GPS_ID) 
-#if defined DEMO_CRSF_GPS    
     {
+      #if defined DEMO_CRSF_GPS    
       log.print("GPS id:");
       crsf.printByte(crsf_id, ' ');
       log.printf("lat:%2.7f  lon:%2.7f", crsf.gpsF_lat, crsf.gpsF_lon);
@@ -54,8 +56,8 @@ void loop()
  #endif     
     }
 
-    if (crsf_id == BATTERY_ID) 
-    {   
+    if (crsf_id == BATTERY_ID) // 0x08
+    { 
 #if defined DEMO_CRSF_BATTERY         
       log.print("BATTERY id:");
       crsf.printByte(crsf_id, ' ');
@@ -66,7 +68,25 @@ void loop()
 #endif 
     }
    
-    if (crsf_id == ATTITUDE_ID)
+    if (crsf_id == LINK_ID) // 0x14 Link statistics
+    {
+#if defined DEMO_CRSF_LINK 
+      log.print("LINK id:");     
+      crsf.printByte(crsf_id, ' ');
+      log.printf("  up_rssi_ant_1:%ddB", crsf.link_up_rssi_ant_1 * -1);  
+      log.printf("  up_rssi_ant_2:%ddB", crsf.link_up_rssi_ant_2 * -1);  
+      log.printf("  up_quality:%d%%", crsf.link_up_quality);  
+      log.printf("  up_snr:%ddB", crsf.link_up_snr);
+      log.printf("  diversity_active_ant:%d", crsf.link_diversity_active_ant);  
+      log.printf("  rf_mode:%d", crsf.link_rf_mode);  
+      log.printf("  up_tx_power:%d", crsf.link_up_tx_power);  
+      log.printf("  dn_rssi:%ddB", crsf.link_dn_rssi * -1);  
+      log.printf("  dn_quality:%d%%", crsf.link_dn_quality);  
+      log.printf("  up_rssi_ant_1:%d", crsf.link_up_rssi_ant_1);  
+      log.printf("  link_dn_snr:%ddB\n", crsf.link_dn_snr);        
+#endif      
+    }
+    if (crsf_id == ATTITUDE_ID) // 0x1E
     {
 #if defined DEMO_CRSF_ATTITUDE 
       log.print("ATTITUDE id:");
