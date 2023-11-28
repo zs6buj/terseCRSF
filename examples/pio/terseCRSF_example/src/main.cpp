@@ -30,7 +30,7 @@
 #define log   Serial
 
 #define crsf_uart            1              // Serial1
-#define crsf_baud           400000
+#define crsf_baud           420000
 HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
 
 CRSF crsf;                                  // instantiate CRSF object
