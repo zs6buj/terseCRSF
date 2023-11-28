@@ -1,25 +1,19 @@
 #include <Arduino.h>
 #include <iostream>
 #include <string>
+#include <HardwareSerial.h>
 
-#define log             Serial
-#define crsfSerial      Serial1
-#if defined SEND_SBUS
-  #define sbusSerial    Serial2
-#endif
-
-//#define RC_BUILD       // ELSE TELEMETRY BUILD
-
+//#define RC_BUILD    // else TELEMETRY_BUILD
 #if defined RC_BUILD
-  //#define SEND_SBUS
+  //#define SUPPORT_SBUS_OUT 
 #endif
 
 #define MAJOR_VER          0
 #define MINOR_VER          0
-#define PATCH_LEV          2 
+#define PATCH_LEV          3 
 
 //=========  D E M O   M A C R O S  ========
-#define DEMO_PWM_VALUES
+//#define DEMO_PWM_VALUES
 //#define DEMO_SBUS
 //#define DEMO_CRSF_GPS
 //#define DEMO_CRSF_BATTERY
@@ -30,9 +24,16 @@
 //#define SHOW_LINK_STATS
 //#define SHOW_LOOP_PERIOD
 //==========================================
-#define  RC_INPUT_MAX_CHANNELS 8  //18
+
+#define log   Serial
 
 #define RADS2DEGS 180 / PI
+
+typedef enum sbus_mode_state
+{
+  sbm_normal = 0,
+  sbm_fast = 1
+} sbmode_t;
 
 // Frame id
 #define GPS_ID                         0x02
@@ -52,25 +53,10 @@
 #define COMMAND_ID                     0x32
 #define RADIO_ID                       0x3A
 
-#define CRSF_BUFFER_SIZE               64
-#define CRSF_SBUS_BUFFER_SIZE          25   
 #define CRSF_TEL_SYNC_BYTE             0xC8 
-#define CRSF_RC_SYNC_BYTE1             24   // 0x18 these are repeating frame length values
-#define CRSF_RC_SYNC_BYTE2             22   // 0x16 byte pair close to unique
-
-#if defined RC_BUILD
-    #define crfs_invert     true
-    #define crfs_rxPin      13      // YELLOW rx from FC WHITE tx
-    #define crfs_txPin      14      // GREEN tx to FC LIGHT BLUE 
-    #define sbus_rxPin      -1      // RX1 SBUS not used - don't care 
-    #define sbus_txPin      15      // TX1 SBUS out 
-    #define sbusFast        false
-    #define sbusInvert      true   
-#else
-    #define crfs_invert     false
-    #define crfs_rxPin      27      //16 YELLOW rx from GREEN FC tx
-    #define crfs_txPin      17      // GREEN tx to YELLOW FC rx    
-#endif
+#define CRSF_RC_SYNC_BYTE              0xEE
+//#define CRSF_RC_SYNC_BYTE1             24   // 0x18 these are repeating frame length values
+//#define CRSF_RC_SYNC_BYTE2             22   // 0x16 byte pair close to unique
 
 class CRSF
 {
@@ -78,20 +64,21 @@ class CRSF
 public:
 // quote "416KBaud that CRSF uses", ELRS uses 420000
 #if defined RC_BUILD 
-const uint32_t crfs_baud = 416000;  // works for both
+const uint32_t crfs_baud = 420000;  // works for both
 #else
 const uint32_t crfs_baud = 420000;  // works for both
 #endif
 
-#define MAX_RC_BYTES  22
-uint8_t   max_rc_bytes = MAX_RC_BYTES;
-uint8_t   max_ch = RC_INPUT_MAX_CHANNELS;
+const uint8_t   crsf_buffer_size  = 64;
+const uint8_t   max_rc_bytes      = 22; // just the RC bytes, not the full sbus
+const uint8_t   sbus_buffer_size  = 25; // Header(1) + RC_bytes(22) + status(1)(los+fs) + footer(1)
+const uint8_t   max_ch            = 8;  // max 18
+
 uint8_t   frame_lth = 0;
-uint16_t  rc_ch_cnt = 0;
-uint8_t   crsf_buf[CRSF_BUFFER_SIZE] {};
-uint8_t   rc_bytes[22]; // RC_bytes(22) - note: just the RC bytes, not the full sbus
-uint8_t   sb_bytes[25]; // Header(1) + RC_bytes(22) + status(1)(los+fs) + footer(1)
-uint16_t  pwm_val[RC_INPUT_MAX_CHANNELS] {};  
+uint8_t   crsf_buf[64] {};     // sizes as per above
+uint8_t   rc_bytes[22] {};             
+uint8_t   sb_bytes[25] {};    
+uint16_t  pwm_val[8] {};  
 
 uint8_t   crsf_id = 0;
 uint8_t   crsf_lth = 0;
@@ -146,7 +133,8 @@ std::string flightMode;
 // Member function prototypes
 
 private:
-
+  Stream* crsf_port;   // pointer type
+  Stream* sbus_port;   // pointer type
 // own link stats
   uint32_t frames_read = 0;
   uint32_t good_frames = 0;
@@ -155,7 +143,9 @@ private:
   uint16_t unknown_ids = 0;
 
 public:
-  bool initialise();
+  //CRSF();   // for 
+  bool initialise(Stream& port);
+  bool sbus_initialise(Stream& port);
   bool readCrsfFrame(uint8_t &lth);
   uint8_t decodeTelemetry(uint8_t *_buf);
   void decodeRC();
@@ -172,6 +162,10 @@ private:
   uint16_t wrap360(int16_t);
   bool fixBadRc(uint8_t *);
   void prepSBUS(uint8_t *rc_buf, uint8_t *sb_buf, bool _los, bool _failsafe);
+#if defined SUPPORT_SBUS_OUT
+  void sendSBUS(uint8_t *sb_buf);
+#endif
   bool bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch);
   void pwmToBytes(uint16_t *in_pwm, uint8_t *rc_byt, uint8_t max_ch);
+
 };  // end of class

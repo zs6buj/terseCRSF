@@ -1,42 +1,29 @@
-
 #include <terseCRSF.h>
-
-//=======================================================
-bool CRSF::initialise()
+/*
+CRSF::CRSF() :
+  crsf_crc(0xd5),
+    blah(0)
 {
-  log.print("\nterseCRSF by zs6buj");
+  // constructor for CRSF class
+}
+*/
+//=======================================================
+bool CRSF::sbus_initialise(Stream &port)
+{
+  this->sbus_port = &port;  //  object pointer
+return true;
+}
+//=======================================================
+bool CRSF::initialise(Stream &port)
+{
+  this->crsf_port = &port;  //  object pointer
+  log.print("terseCRSF by zs6buj");
   log.printf(" version:%d.%02d.%02d\n", MAJOR_VER, MINOR_VER, PATCH_LEV);
 #if defined RC_BUILD
   log.println("RC_BUILD");
 #else
   log.println("TELEMETRY_BUILD");
 #endif
-  crsfSerial.begin(crfs_baud, SERIAL_8N1, crfs_rxPin, crfs_txPin, crfs_invert);
-  log.printf("CRFS baud:%u  rxPin:%u  txPin:%u  invert:%u\n", crfs_baud, crfs_rxPin, crfs_txPin, crfs_invert);
-  #if defined SEND_SBUS
-    if(sbusInvert)
-    {
-      log.println("SBUS inverted (idle low)");
-    } else 
-    {
-      log.println("SBUS not inverted (idle high) ");
-    }
-    uint32_t sbus_baud = 0;
-    if (sbusFast)
-    {
-      sbus_baud = 200000;
-      log.print("Fast 200000b/s");
-    }
-    else
-    {
-      sbus_baud = 100000;  
-      log.print("Normal 100000 b/s"); 
-    }  
-    log.printf(" SBUS sending on pin tx:%d\n", sbus_txPin);
-    delay(100);
-    sbusSerial.begin(sbus_baud, SERIAL_8E2, sbus_rxPin, sbus_txPin, sbusInvert); 
-    delay(100);
-  #endif
 return true;
 }
 //=======================================================
@@ -118,7 +105,7 @@ void CRSF::printLinkStats()
   if ((millis() - error_millis) > 1.2E5)  // 2 minutes
   {
     error_millis = millis();
-    log.printf("frames_read:%u  good_frames:%u  crc_errors:%u  frame_errors:%u  unknown_ids:%u\n",  frames_read, good_frames, crc_errors, frame_errors, unknown_ids);
+    log.printf("frames_C:%u  good_frames:%u  crc_errors:%u  frame_errors:%u  unknown_ids:%u\n",  frames_read, good_frames, crc_errors, frame_errors, unknown_ids);
   }
 #endif
 }
@@ -215,7 +202,7 @@ bool CRSF::bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch)
 //===============================================================
 void CRSF::pwmToBytes(uint16_t *in_pwm, uint8_t *rc_byt, uint8_t max_ch)
 {
-  uint16_t ch_pwm[RC_INPUT_MAX_CHANNELS] {};
+  uint16_t ch_pwm[max_ch] {};
   // remap PWM values to sbus byte values in the range of 192 - 1792 (0x00 thu 0xFF)
   for (int i = 0; i < max_ch; i++)
   {
@@ -266,74 +253,70 @@ bool CRSF::readCrsfFrame(uint8_t &frm_lth)
   static uint8_t idx = 0;
   static uint8_t embed_lth = 0;
   static uint8_t crsf_crc = 0;
-  if (crsfSerial.available())
-  {
-    uint8_t numch = crsfSerial.available();
-    while (numch)
-    {
-        if (idx == 0)
-        {
-          memset(crsf_buf, 0, CRSF_BUFFER_SIZE); // flush the crsf_buf
- #if defined RC_BUILD
-          if (b == CRSF_RC_SYNC_BYTE2)               // prev read byte    
-          {
-            crsf_buf[0] = b;                         // to front of buf
-          }
-        }
-#else   // TELEM BUILD
-        if (b == CRSF_TEL_SYNC_BYTE)               // prev read byte    
-          {
-            crsf_buf[0] = b;                         // to front of buf
-          }
-        }
-#endif
-        static uint8_t prev_b = 0;
-        prev_b = b;
-        b = crsfSerial.read();
-        numch--;
-        //printByte(b, ' ');
-#if defined RC_BUILD
-        if ((b == CRSF_RC_SYNC_BYTE2) && (prev_b == CRSF_RC_SYNC_BYTE1))
-#else
-        if (b == CRSF_TEL_SYNC_BYTE)         // new frame, so now process prev buffer     
-#endif
-        {
-            frames_read++;     
-            frm_lth = idx;    
-            idx = 0;
-#ifndef RC_BUILD    // TELEMETRY BUILD  
-            crsf_crc = crc8_dvb_s2_sbuf_accum(&crsf_buf[2], frm_lth-2); // lth -start 
-            if (crsf_buf[frm_lth] != crsf_crc)
-            {
-              crc_errors++;
-              //log.printf("frm_lth:%u  buf_crc:0x%2X calc_crc:0x%2X   mismatch\n", frm_lth, crsf_buf[frm_lth], crsf_crc);
-              return false;
-            } 
-            if (frm_lth != embed_lth)  // embedded frm lth byte + CRC
-            {
-              frame_errors++;   
-              //log.printf("frm_lth:%u  embed_lth:%u mismatch\n", frm_lth, embed_lth);
-              return false;
-            }
+  uint8_t embed_crc = 0;
 
-#endif
-            good_frames++;
-            return true;
-        }
-        // prevent array overflow
-        if (idx < CRSF_BUFFER_SIZE-1) idx++;
-        crsf_buf[idx] = b; 
-        if (idx == 1) 
+  while (crsf_port->available())
+  {
+      if (idx == 0)
+      {
+        memset(crsf_buf, 0, crsf_buffer_size);    // flush the crsf_buf
+#if defined RC_BUILD
+        if (b == CRSF_RC_SYNC_BYTE)               // prev read byte    
         {
-          embed_lth = b+1; // 2nd byte, + 1
+          crsf_buf[0] = b;                        // to front of buf
         }
-    }
+      }
+#else   // TELEM BUILD
+      if (b == CRSF_TEL_SYNC_BYTE)               // prev read byte    
+        {
+          crsf_buf[0] = b;                          // to front of buf
+        }
+      }
+#endif
+      static uint8_t prev_b = 0;
+      prev_b = b;
+      b = crsf_port->read();
+#if defined RC_BUILD
+      if (b == CRSF_RC_SYNC_BYTE)
+#else
+      if (b == CRSF_TEL_SYNC_BYTE)         // new frame, so now process prev buffer     
+#endif
+      {
+          frames_read++;     
+          frm_lth = idx;    
+          idx = 0;
+#if defined RC_BUILD    // RC BUILD    
+          //add in crc from and including buf[2] == lth_byte 0x16, series == (EE 18) 16 E0 03 5F 2B C0 ....
+          crsf_crc = crc8_dvb_s2_sbuf_accum(&crsf_buf[2], frm_lth-3);
+          embed_crc = crsf_buf[frm_lth - 1];
+#else                  // TELEMETRY BUILD  
+          crsf_crc = crc8_dvb_s2_sbuf_accum(&crsf_buf[2], frm_lth-2); // lth - start
+          embed_crc = crsf_buf[frm_lth];
+#endif
+          if (embed_crc != crsf_crc)
+          {
+            crc_errors++;
+            //log.printf("embedded_crc:0x%2X calc_crc:0x%2X  mismatch - lth:%u\n", embed_crc, crsf_crc, frm_lth);
+            return false;
+          } 
+          good_frames++;
+          return true;
+      }
+      // prevent array overflow
+      if (idx < crsf_buffer_size-1) idx++;
+      crsf_buf[idx] = b; 
+      //log.printf("%u:", idx);    
+      //printByte(b, ' ');         
+      if (idx == 1) 
+      {
+        embed_lth = b+1; // 2nd byte, + 1
+      }
   }
    
   return false;  // drop thru and loop
 }
 //===================================================================
-#if defined SEND_SBUS
+#if defined SUPPORT_SBUS_OUT
 void CRSF::sendSBUS(uint8_t *sb_buf)
 {
   /*
@@ -346,7 +329,7 @@ void CRSF::sendSBUS(uint8_t *sb_buf)
    1 Footer byte 00000000b (0x00)
    */
 
-  sbusSerial.write(sb_buf, 25);
+  sbus_port->write(sb_buf, 25);
 }
 #endif
 //========================================================
@@ -489,14 +472,14 @@ void CRSF::decodeRC()
 {
 #if defined SHOW_BUFFER
   log.print("CRSF_BUF:");
-  printBytes(&*crsf_buf, 24); // sync (lth) byte + 22 RC bytes
+  printBytes(&*crsf_buf, 26); // sync byte(0xEE) + 2 + 22 RC bytes +CRC
 #endif
-  bytesToPWM(&*(crsf_buf+1), &*pwm_val, max_ch);
-#if defined SEND_SBUS || defined DEMO_SBUS
-  memcpy(&*rc_bytes, &*(crsf_buf + 1), 22);
+  bytesToPWM(&*(crsf_buf+3), &*pwm_val, max_ch);  // note skip 3B
+#if defined SUPPORT_SBUS_OUT || defined DEMO_SBUS
+  memcpy(&*rc_bytes, &*(crsf_buf + 3), 22);       // note skip 3B
   prepSBUS(&*rc_bytes, &*sb_bytes, false, false);
 #endif
-#if defined SEND_SBUS
+#if defined SUPPORT_SBUS_OUT
   sendSBUS(&*sb_bytes);
 #endif
  

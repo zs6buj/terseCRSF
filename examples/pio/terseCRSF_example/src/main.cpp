@@ -1,7 +1,39 @@
 #include <Arduino.h>
-#include <terseCRSF.h>  
+#include <terseCRSF.h>
+//#define RC_BUILD         // ELSE TELEMETRY BUILD
 
-CRSF crsf;            // instantiate CRSF object
+#if defined RC_BUILD
+  //#define SUPPORT_SBUS_OUT 
+#endif
+
+#define DEMO_PWM_VALUES
+#define DEMO_SBUS
+
+#if defined RC_BUILD
+    #define crsf_rxPin      13      // Signal pin transmitter in bay tx
+    #define crsf_txPin      14      // GREEN tx to FC LIGHT BLUE 
+    #define crsf_invert     true
+  #if defined SUPPORT_SBUS_OUT    
+    #define sbus_uart       2      // Serial2
+    HardwareSerial sbusSerial(sbus_uart);       // instantiate Serial object
+    #define sbus_rxPin      -1      // RX1 SBUS not used - don't care 
+    #define sbus_txPin      15      // TX1 SBUS out 
+    #define sbus_invert     true  
+    sbmode_t sbus_mode = sbm_normal; //normal - baud - 100000b/s, fast - baud = 200000b/s
+  #endif     
+#else
+    #define crsf_invert     false
+    #define crsf_rxPin      27      //16 YELLOW rx from GREEN FC tx
+    #define crsf_txPin      17      // GREEN tx to YELLOW FC rx    
+#endif
+
+#define log   Serial
+
+#define crsf_uart            1              // Serial1
+#define crsf_baud           400000
+HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
+
+CRSF crsf;                                  // instantiate CRSF object
 
 void printLoop1(bool newline)
 {
@@ -17,21 +49,42 @@ void printLoop1(bool newline)
 void setup() {
   log.begin(115200);
   delay(2000);
-  crsf.initialise();
+
+  crsfSerial.begin(crsf_baud, SERIAL_8N1, crsf_rxPin, crsf_txPin, crsf_invert);
+  log.printf("CRFS uart:%u  baud:%u  rxPin:%u  txPin:%u  invert:%u\n", crsf_uart, crsf_baud, crsf_rxPin, crsf_txPin, crsf_invert);
+  crsf.initialise(crsfSerial);  
+  #if defined SUPPORT_SBUS_OUT
+    uint32_t sbus_baud = 0;
+    if (sbus_mode == sbm_fast)
+    {
+      sbus_baud = 200000;
+      log.println("SBUS fast 200000b/s");
+    }
+    else
+    {
+      sbus_baud = 100000;  
+      log.println("SBUS normal 100000 b/s"); 
+    }  
+    delay(100);
+    sbusSerial.begin(sbus_baud, SERIAL_8E2, sbus_rxPin, sbus_txPin, sbus_invert); 
+    log.printf("SBUS uart:%u  baud:%u sending on txPin:%u  invert:%u\n", sbus_uart, sbus_baud, sbus_txPin, sbus_invert);
+    delay(100);
+    crsf.sbus_initialise(sbusSerial);
+#endif
 }
 
 void loop() 
 {
   crsf.printLinkStats();    // optional
 
-  if (crsf.readCrsfFrame(crsf.frame_lth))  
+  if (crsf.readCrsfFrame(crsf.frame_lth))  // exposes discovered frame_lth if needed
   {
 #if defined SHOW_LOOP_PERIOD
   printLoop1(true);
 #endif
 
 #if defined RC_BUILD
-      crsf.decodeRC();   // remember to lose the prefix sync byte
+  crsf.decodeRC(); // remember to lose the prefix sync byte
 #if defined DEMO_PWM_VALUES
       crsf.printPWM(&*crsf.pwm_val, crsf.max_ch);
 #endif

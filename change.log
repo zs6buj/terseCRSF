@@ -1,0 +1,4 @@
+v0.0.2 2023-11-16   Add CRC check, add link stats, minor revision of parsing algo
+       2023-11-17   Testing, packaging
+v0.0.3 2023-11-21   Isolate #defined numbers to class data members in terseCRSF.h
+       2023-11-24   Add CRC for RC incoming

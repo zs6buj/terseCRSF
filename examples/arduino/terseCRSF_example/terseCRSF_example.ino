@@ -1,5 +1,30 @@
-
+//version 0.0.3
 #include <terseCRSF.h>  
+
+//=========  D E M O   M A C R O S  ========
+//#define DEMO_PWM_VALUES
+//#define DEMO_CRSF_GPS
+//#define DEMO_CRSF_BATTERY
+//#define DEMO_CRSF_LINK
+//#define DEMO_CRSF_ATTITUDE
+//#define DEMO_CRSF_FLIGHT_MODE
+//#define SHOW_LOOP_PERIOD
+
+#if defined RC_BUILD
+    #define crsf_rxPin      13      // Signal tx pin, transmitter, in back bay
+    #define crsf_txPin      14      // 
+    #define crsf_invert     true
+#else
+    #define crsf_invert     false
+    #define crsf_rxPin      27      
+    #define crsf_txPin      17       
+#endif
+
+#define log   Serial
+
+#define crsf_uart            1              // Serial1
+#define crsf_baud           400000
+HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
 
 CRSF crsf;            // instantiate CRSF object
 
@@ -17,7 +42,9 @@ void printLoop1(bool newline)
 void setup() {
   log.begin(115200);
   delay(2000);
-  crsf.initialise();
+  crsfSerial.begin(crsf_baud, SERIAL_8N1, crsf_rxPin, crsf_txPin, crsf_invert);
+  log.printf("CRFS uart:%u  baud:%u  rxPin:%u  txPin:%u  invert:%u\n", crsf_uart, crsf_baud, crsf_rxPin, crsf_txPin, crsf_invert);
+  crsf.initialise(crsfSerial);  
 }
 
 void loop() 
@@ -41,31 +68,31 @@ void loop()
 #else   // TELEMETRY BUILD
     uint8_t crsf_id = crsf.decodeTelemetry(&*crsf.crsf_buf);
 
-    if (crsf_id == GPS_ID)    
+    if (crsf_id == GPS_ID)   
     {
-#if defined DEMO_CRSF_GPS       
+#if defined DEMO_CRSF_GPS        
       log.print("GPS id:");
       crsf.printByte(crsf_id, ' ');
       log.printf("lat:%2.7f  lon:%2.7f", crsf.gpsF_lat, crsf.gpsF_lon);
       log.printf("  ground_spd:%.1fkm/hr", crsf.gpsF_groundspeed);
       log.printf("  hdg:%.2fdeg", crsf.gpsF_heading);
       log.printf("  alt:%dm", crsf.gps_altitude);
-      log.printf("  sats:%d\n", crsf.gps_sats); 
- #endif     
-    }
-
+      log.printf("  sats:%d\n", crsf.gps_sats);
+ #endif          
+    }      
+  
     if (crsf_id == BATTERY_ID) 
-    {   
-#if defined DEMO_CRSF_BATTERY         
+    {     
+#if defined DEMO_CRSF_BATTERY            
       log.print("BATTERY id:");
       crsf.printByte(crsf_id, ' ');
       log.printf("volts:%2.1f", crsf.batF_voltage);
       log.printf("  amps:%3.1f", crsf.batF_current);
       log.printf("  Ah_drawn:%3.1f", crsf.batF_fuel_drawn);
       log.printf("  remaining:%3u%%\n", crsf.bat_remaining);
-#endif 
-    }
-   
+#endif       
+    }      
+
     if (crsf_id == ATTITUDE_ID)
     {
 #if defined DEMO_CRSF_ATTITUDE 
