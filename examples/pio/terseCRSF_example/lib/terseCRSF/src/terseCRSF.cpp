@@ -276,6 +276,16 @@ bool CRSF::readCrsfFrame(uint8_t &frm_lth)
       static uint8_t prev_b = 0;
       prev_b = b;
       b = crsf_port->read();
+#if defined SHOW_BYTE_STREAM 
+      printByte(b, ' ');
+      static uint8_t col = 0;
+      col++;
+      if (col > 35)
+      {
+        col = 0;
+        log.print("\n");
+      }
+#endif
 #if defined RC_BUILD
       if (b == CRSF_RC_SYNC_BYTE)
 #else

@@ -10,7 +10,12 @@
 
 #define MAJOR_VER          0
 #define MINOR_VER          0
-#define PATCH_LEV          3 
+#define PATCH_LEV          4 
+
+/*
+  Changelog
+  2024-05-13 Add SHOW_BYTE_STREAM debug option
+*/
 
 //=========  D E M O   M A C R O S  ========
 //#define DEMO_PWM_VALUES
@@ -21,6 +26,7 @@
 //#define DEMO_CRSF_ATTITUDE
 //#define DEMO_CRSF_FLIGHT_MODE
 //#define SHOW_BUFFER
+//#define SHOW_BYTE_STREAM
 //#define SHOW_LINK_STATS
 //#define SHOW_LOOP_PERIOD
 //==========================================

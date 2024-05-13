@@ -1,4 +1,4 @@
-//version 0.0.3
+//version 0.0.4
 #include <terseCRSF.h>  
 
 //=========  D E M O   M A C R O S  ========
