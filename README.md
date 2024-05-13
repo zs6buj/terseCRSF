@@ -37,8 +37,10 @@ Activate these demo macros in the header to show how the decoded data members of
 #define DEMO_CRSF_FLIGHT_MODE
 
 
-These two macros may be helpful, and are self explanatory:
+These three macros may be helpful, and are self explanatory:
 
 #define SHOW_BUFFER
+
+#define SHOW_BYTE_STREAM
 
 #define SHOW_LOOP_PERIOD
