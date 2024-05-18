@@ -8,9 +8,9 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/include",
-                "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/src",
-                "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/lib/terseCRSF/src",
+                "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/include",
+                "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/src",
+                "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/lib/terseCRSF/src",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",
@@ -203,7 +203,7 @@
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/variants/esp32",
-                "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/.pio/libdeps/esp32dev/Unity/src",
+                "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/.pio/libdeps/esp32dev/Unity/src",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                 "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
@@ -242,9 +242,9 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/include",
-                    "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/src",
-                    "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/lib/terseCRSF/src",
+                    "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/include",
+                    "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/src",
+                    "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/lib/terseCRSF/src",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",
@@ -437,7 +437,7 @@
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/variants/esp32",
-                    "C:/Users/erics/_github/terseCRSF/examples/pio/terseCRSF_example/.pio/libdeps/esp32dev/Unity/src",
+                    "C:/Users/erics/_myprojects/pio/_general/crsf/use_me/terseCRSF05/examples/pio/terseCRSF_example/.pio/libdeps/esp32dev/Unity/src",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                     "C:/Users/erics/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",

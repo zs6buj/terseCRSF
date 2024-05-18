@@ -22,31 +22,6 @@
 #endif
 HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
 
-//=========  D E M O   M A C R O S  ========
-//#define DEMO_PWM_VALUES
-//#define DEMO_CRSF_GPS
-//#define DEMO_CRSF_BATTERY
-//#define DEMO_CRSF_LINK
-//#define DEMO_CRSF_ATTITUDE
-//#define DEMO_CRSF_FLIGHT_MODE
-//#define SHOW_LOOP_PERIOD
-
-#if defined RC_BUILD
-    #define crsf_rxPin      13      // Signal tx pin, transmitter, in back bay
-    #define crsf_txPin      14      // 
-    #define crsf_invert     true
-#else
-    #define crsf_invert     false
-    #define crsf_rxPin      27      
-    #define crsf_txPin      17       
-#endif
-
-#define log   Serial
-
-#define crsf_uart            1              // Serial1
-#define crsf_baud           400000
-HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
-
 CRSF crsf;            // instantiate CRSF object
 
 void printLoop1(bool newline)
