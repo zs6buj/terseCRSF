@@ -10,11 +10,12 @@ terseCRSF was coded for a generic ESP32 platform, but should be easily adaptable
 
 CRSF signals typically originate from either a "transmitter box" co-located with the pilot, or a flight-controller (FC) located remotely on a UAV ('plane, drone, rover..). 
 
-In this scenario, assuming CRSF or ELRS is the protocol of choice, the transmitter box typically outputs an RC mode encoded crsf byte stream, and the FC typically outputs a telemetry mode crsf byte stream.
+In this scenario, assuming CRSF or ELRS is the protocol of choice, the transmitter box typically outputs an RC mode encoded crsf byte stream, and the FC typically outputs a telemetry mode crsf byte stream at 420000 b/s. However, the remote controller (transmitter box), having received ELRS telemetry and running EdgeTX or OpenTX, can also mirror/stream CRSF telemetry from one of the available UARTS, albeit at a slower 115200 b/s. Similarly, the receiver, co-located with the FC and having received ELRS RC telemetry, can stream radio control(RC) style CRSF
 
 This code may be built to operate in either RC mode, to read and decode RC PWM values, or the code may be built to operate in TELEMETRY mode, to read and decode telemetry values.
 
-The header file contains the #define RC_BUILD macro, to instruct an RC mode build. In the abscence of this macro, the default build is TELEMETRY mode.
+The header file terseCRSF.h contains the #define RC_BUILD macro, to instruct an RC mode build. In the abscence of this macro, the default build is TELEMETRY mode.
+Assuming TELEMETRY MODE, the macro TELEMETRY_SOURCE must be used to select either (1)Betaflight/Cleanflight (from the flight controller) or (2)EdgeTX/OpenTX (from the remote controller - transmitter box).
 
 In the RC build, by enabling the #define SEND_SBUS macro, an SBUS signal can be output on the pin designated sbus_txPin.
 
