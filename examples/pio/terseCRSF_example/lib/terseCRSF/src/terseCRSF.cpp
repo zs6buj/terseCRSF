@@ -1,45 +1,64 @@
-
 #include <terseCRSF.h>
-
-//=======================================================
-bool CRSF::initialise()
+/*
+CRSF::CRSF() :
+  crsf_crc(0xd5),
+    blah(0)
 {
-  log.print("\nterseCRSF by zs6buj");
-  log.printf(" version:%d.%02d.%02d\n", MAJOR_VERSION, MINOR_VERSION, PATCH_LEVEL);
-#if defined RC_BUILD
-  log.println("RC_BUILD");
-#else
-  log.println("TELEMETRY_BUILD");
-#endif
-  crsfSerial.begin(crfs_baud, SERIAL_8N1, crfs_rxPin, crfs_txPin, crfs_invert);
-  log.printf("CRFS baud:%u  rxPin:%u  txPin:%u  invert:%u\n", crfs_baud, crfs_rxPin, crfs_txPin, crfs_invert);
-  #if defined SEND_SBUS
-    if(sbusInvert)
-    {
-      log.println("SBUS inverted (idle low)");
-    } else 
-    {
-      log.println("SBUS not inverted (idle high) ");
-    }
-    uint32_t sbus_baud = 0;
-    if (sbusFast)
-    {
-      sbus_baud = 200000;
-      log.print("Fast 200000b/s");
-    }
-    else
-    {
-      sbus_baud = 100000;  
-      log.print("Normal 100000 b/s"); 
-    }  
-    log.printf(" SBUS sending on pin tx:%d\n", sbus_txPin);
-    delay(100);
-    sbusSerial.begin(sbus_baud, SERIAL_8E2, sbus_rxPin, sbus_txPin, sbusInvert); 
-    delay(100);
-  #endif
+  // constructor for CRSF class
+}
+*/
+//=======================================================
+bool CRSF::sbus_initialise(Stream &port)
+{
+  this->sbus_port = &port;  //  object pointer
 return true;
 }
+//=======================================================
+bool CRSF::initialise(Stream &port)
+{
+  this->crsf_port = &port;  //  object pointer
+  log.print("terseCRSF by zs6buj");
+  log.printf(" version:%d.%02d.%02d\n", MAJOR_VER, MINOR_VER, PATCH_LEV);
+#if defined RC_BUILD
+  log.println("RC Build. Expected source is EdgeTX/OpenTX");
+#else
+  log.print("Telemetry Build. ");
+#if (TELEMETRY_SOURCE  == 1)      // BetaFlight
+    log.println("Expected source is BetaFlight/CF");
+#elif (TELEMETRY_SOURCE  == 2)    // EdgeTX/OpenTx
+    log.println("Expected source is EdgeTX/OpenTX");
+#endif
 
+#endif
+return true;
+}
+//=======================================================
+uint8_t crc8_dvb_s2(uint8_t crc, unsigned char a)
+{
+    crc ^= a;
+    for (int ii = 0; ii < 8; ++ii) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ 0xD5;
+        } else {
+            crc = crc << 1;
+        }
+    }
+    return crc;
+}
+//=======================================================
+uint8_t crc8_dvb_s2_sbuf_accum(const void *data, uint8_t frm_lth)
+{
+  uint8_t crc = 0;
+  const uint8_t *p = (const uint8_t *)data;
+  const uint8_t *pend = p + frm_lth;
+
+  for (; p != pend; p++)
+  {
+    //log.printf("crc *p 0x%2X\n", *p);
+    crc = crc8_dvb_s2(crc, *p);
+    }
+    return crc;
+}
 //=======================================================
 int32_t CRSF::bytes2int32(uint8_t *byt)
 {
@@ -84,7 +103,27 @@ void CRSF::printBytes(uint8_t *buf, uint8_t len)
   }
   log.println();
 }
-
+//========================================================
+void CRSF::printLinkStats()
+{
+#if defined SHOW_LINK_STATS
+  static uint32_t  error_millis = 0;
+  if ((millis() - error_millis) > 1.2E5)  // 2 minutes
+  {
+    error_millis = millis();
+    log.printf("frames_C:%u  good_frames:%u  crc_errors:%u  frame_errors:%u  unknown_ids:%u\n",  frames_read, good_frames, crc_errors, frame_errors, unknown_ids);
+  }
+#endif
+}
+//===================================================================
+uint16_t CRSF::wrap360(int16_t ang)
+{
+  if (ang < 0)
+    ang += 360;
+  if (ang > 359)
+    ang -= 360;
+  return ang;
+}
 //===================================================================
 void CRSF::prepSBUS(uint8_t *rc_buf, uint8_t *sb_buf, bool _los, bool _failsafe)
 {
@@ -169,7 +208,7 @@ bool CRSF::bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch)
 //===============================================================
 void CRSF::pwmToBytes(uint16_t *in_pwm, uint8_t *rc_byt, uint8_t max_ch)
 {
-  uint16_t ch_pwm[RC_INPUT_MAX_CHANNELS] {};
+  uint16_t ch_pwm[max_ch] {};
   // remap PWM values to sbus byte values in the range of 192 - 1792 (0x00 thu 0xFF)
   for (int i = 0; i < max_ch; i++)
   {
@@ -214,51 +253,86 @@ void CRSF::pwmToBytes(uint16_t *in_pwm, uint8_t *rc_byt, uint8_t max_ch)
   // log.println();
 }
 //========================================================
-bool CRSF::readCrsfFrame(uint8_t &lth)
+bool CRSF::readCrsfFrame(uint8_t &frm_lth)
 {
   static uint8_t b = 0;
   static uint8_t idx = 0;
-  while (crsfSerial.available())
+  static uint8_t embed_lth = 0;
+  static uint8_t crsf_crc = 0;
+  uint8_t embed_crc = 0;
+
+  while (crsf_port->available())
   {
-    if (idx == 0)
-    {
-      memset(crsf_buf, 0, CRSF_BUFFER_SIZE); // flush the crsf_buf
-#if defined RC_BUILD
-      if (b == CRSF_RC_SYNC_BYTE2)               // prev read byte    
+      if (idx == 0)
       {
-        crsf_buf[0] = b;                         // to front of buf
+        memset(crsf_buf, 0, crsf_buffer_size);    // flush the crsf_buf
+#if defined RC_BUILD
+        if (b == CRSF_RC_SYNC_BYTE)               // prev read byte    
+        {
+          crsf_buf[0] = b;                        // to front of buf
+        }
       }
-    }
-#else
+#else   // TELEM BUILD
       if (b == CRSF_TEL_SYNC_BYTE)               // prev read byte    
-      {
-        crsf_buf[0] = b;                         // to front of buf
+        {
+          crsf_buf[0] = b;                          // to front of buf
+        }
       }
-    }
 #endif
-    static uint8_t prev_b = 0;
-    prev_b = b;
-    b = crsfSerial.read();
-    //printByte(b, ' ');
+      static uint8_t prev_b = 0;
+      prev_b = b;
+      b = crsf_port->read();
+#if defined SHOW_BYTE_STREAM 
+      printByte(b, ' ');
+      static uint8_t col = 0;
+      col++;
+      if (col > 35)
+      {
+        col = 0;
+        log.print("\n");
+      }
+#endif
 #if defined RC_BUILD
-    //log.printf("|byte1:%2x  byte2:%2x|", prev_b, b);
-    if ((b == CRSF_RC_SYNC_BYTE2) && (prev_b == CRSF_RC_SYNC_BYTE1))
+      if (b == CRSF_RC_SYNC_BYTE)
 #else
-    if (b == CRSF_TEL_SYNC_BYTE)         // new frame, so now process prev buffer     
+      if (b == CRSF_TEL_SYNC_BYTE)         // new frame, so now process prev buffer     
 #endif
-    {
-      lth = idx;
-      idx = 0;
-      return true;
-    }
-    // prevent array overflow
-    if (idx < CRSF_BUFFER_SIZE-1) idx++; 
-    crsf_buf[idx] = b;  
+      {
+          frames_read++;     
+          frm_lth = idx;    
+          idx = 0;
+#if defined RC_BUILD    // RC BUILD    
+          //add in crc from and including buf[2] == lth_byte 0x16, series == (EE 18) 16 E0 03 5F 2B C0 ....
+          crsf_crc = crc8_dvb_s2_sbuf_accum(&crsf_buf[2], frm_lth-3);
+          embed_crc = crsf_buf[frm_lth - 1];
+#else                  // TELEMETRY BUILD  
+          crsf_crc = crc8_dvb_s2_sbuf_accum(&crsf_buf[2], frm_lth-2); // lth - start
+          embed_crc = crsf_buf[frm_lth];
+#endif
+          if (embed_crc != crsf_crc)
+          {
+            crc_errors++;
+            //log.printf("embedded_crc:0x%2X calc_crc:0x%2X  mismatch - lth:%u\n", embed_crc, crsf_crc, frm_lth);
+            return false;
+          } 
+          good_frames++;
+          return true;
+      }
+      // prevent array overflow
+      if (idx < crsf_buffer_size-1) idx++;
+      crsf_buf[idx] = b; 
+      //log.printf("%u:", idx);    
+      //printByte(b, ' ');         
+      if (idx == 1) 
+      {
+        embed_lth = b+1; // 2nd byte, + 1
+      }
   }
-  return false;
+   
+  return false;  // drop thru and loop
 }
 //===================================================================
-#if defined SEND_SBUS
+#if defined SUPPORT_SBUS_OUT
 void CRSF::sendSBUS(uint8_t *sb_buf)
 {
   /*
@@ -271,13 +345,13 @@ void CRSF::sendSBUS(uint8_t *sb_buf)
    1 Footer byte 00000000b (0x00)
    */
 
-  sbusSerial.write(sb_buf, 25);
+  sbus_port->write(sb_buf, 25);
 }
 #endif
 //========================================================
 uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
 {
-  uint8_t crsf_pay_lth = _buf[1];
+  uint8_t crsf_frm_lth = _buf[1];   
   uint8_t crsf_id = _buf[2];
   if (crsf_id == 0)
     {
@@ -285,7 +359,7 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
     }
 #if defined SHOW_BUFFER
   log.print("CRSF_BUF:");
-  printBytes(&*_buf, crsf_pay_lth);
+  printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
     switch (crsf_id)
     {
@@ -298,102 +372,122 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
       gpsF_groundspeed = (float)(gps_groundspeed * 0.1);     // km\hr
       gps_heading = bytes2uint16(&_buf[13]);
       gpsF_heading = (float)(gps_heading * 0.01);            // degrees+decimals 
-      gps_altitude = bytes2uint16(&_buf[15]);            // metres, ­1000m offset
-      //gps_altitude += 1e3;
+      gps_altitude = bytes2uint16(&_buf[15]);                // metres, ­1000m offset
+      gps_altitude = gps_altitude > 100 ? gps_altitude - 1000: gps_altitude;
       gps_sats = (uint8_t)_buf[17];
       break;
     case CF_VARIO_ID:
-#if defined DEMO_CRSF_CF_VARIO 
+#if defined SHOW_CRSF_CF_VARIO 
       log.print("CF_VARIO:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif 
       break;
     case BATTERY_ID:
       bat_voltage = bytes2uint16(&_buf[3]);           // mV * 100
-      batF_voltage = (float)bat_voltage * 10;             // volts
+      batF_voltage = (float)bat_voltage * 10;         // volts
       bat_current = bytes2uint16(&_buf[5]);           // mA * 100
-      batF_current = bat_current * 10;                    // amps
+      batF_current = bat_current * 10;                // amps
       bat_fuel_drawn = bytes2int32(&_buf[7]);         // uint24_t    mAh drawn
-      batF_fuel_drawn = bat_fuel_drawn * 1e3;             // Ah drawn
-      bat_remaining = (uint8_t)_buf[10];;             // percent
+      batF_fuel_drawn = bat_fuel_drawn * 1e3;         // Ah drawn
+      bat_remaining = (uint8_t)_buf[10];              // percent
       break;
     case BARO_ALT_ID:
-#if defined DEMO_CRSF_BARO     
+#if defined SHOW_CRSF_BARO     
       log.print("BARO_ALT:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
        break; 
     case HEARTBEAT_ID:
-#if defined DEMO_CRSF_HEARTBEAT 
+#if defined SHOW_CRSF_HEARTBEAT 
       log.print("HEARTBEAT:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
        break;     
-    case LINK_ID:
-#if defined DEMO_CRSF_LINK 
-      log.print("LINK:");
-#endif
+    case LINK_ID:  // 0x14 Link statistics
+      link_up_rssi_ant_1 = (uint8_t)_buf[3];          // dBm * -1
+      link_up_rssi_ant_2 = (uint8_t)_buf[4];          // dBm * -1
+      link_up_quality = (uint8_t)_buf[5];             // packet_success_rate (%)
+      link_up_snr = (int8_t)_buf[6];                  // db
+      link_diversity_active_ant = (uint8_t)_buf[7];   // (enum ant_1 = 0, ant_2)
+      link_rf_mode = (uint8_t)_buf[8];                // (enum 4fps = 0, 50fps, 150hz)
+      link_up_tx_power = (uint8_t)_buf[9];            // (enum 0mW = 0, 10mW, 25 mW, 100 mW, 500 mW, 1000 mW, 2000mW)
+      link_dn_rssi = (uint8_t)_buf[10];               // RSSI(dBm * -1)
+      link_dn_quality = (uint8_t)_buf[11];            // packet_success_rate (%)
+      link_dn_snr = (int8_t)_buf[12];                 // db
       break;
     case CHANNELS_ID:
-#if defined DEMO_CRSF_CHANNELS 
+#if defined SHOW_CRSF_CHANNELS 
       log.print("CHANNELS:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case LINK_RX_ID:
-#if defined DEMO_CRSF_LINK_RX 
+#if defined SHOW_CRSF_LINK_RX 
       log.print("LINK_RX:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case LINK_TX_ID:
-#if defined DEMO_CRSF_LINK_TX 
+#if defined SHOW_CRSF_LINK_TX 
       log.print("LINK_TX:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case ATTITUDE_ID:
-      atti_pitch = bytes2int16(&_buf[3]);                         // rad / 10000  DECIDEGREES_TO_RADIANS10000
+      atti_pitch = bytes2int16(&_buf[3]);                         // rad / 10000  
       atti_roll = bytes2int16(&_buf[5]);                          // rad / 10000
-      atti_yaw = bytes2int16(&_buf[7]);                           // rad / 10000)
-      attiF_pitch = (float)(atti_pitch * RADS2DEGS * 0.0001);         // deg
-      attiF_roll = (float)(atti_roll * RADS2DEGS * 0.0001);           // deg    
-      attiF_yaw = (float)(atti_yaw * RADS2DEGS * 0.0001);            // deg
+      atti_yaw = bytes2int16(&_buf[7]);                           // rad / 10000
+      attiF_pitch = (float)(atti_pitch * RADS2DEGS * 0.0001);     // deg
+      attiF_roll = (float)(atti_roll * RADS2DEGS * 0.0001);       // deg    
+      atti_yaw = (int16_t)(atti_yaw * RADS2DEGS * 0.0001);        // deg
+      atti_yaw = wrap360(atti_yaw);
+      attiF_yaw = (float)atti_yaw;
       break;
     case FLIGHT_MODE_ID:
       /* HUH! Flight mode is a string*/
-      flight_mode_lth = crsf_pay_lth - 4;
-      memcpy(&flightMode, &_buf[4], flight_mode_lth);
-      //printBytes(&_buf[4], crsf_pay_lth - 4);                  
-#if defined DEMO_CRSF_FLIGHT_MODE
-      log.print("FLIGHT_MODE id:");
-      printByte(crsf_id, ' ');
-      printf("lth:%u %s\n",flight_mode_lth, &flightMode);
-#endif
+      flight_mode_lth = crsf_frm_lth - 3;              // fix 2024-05-17
+      memcpy(&flightMode, &_buf[3], flight_mode_lth);  // fix 2024-05-17
+      //printBytes(&_buf[3], flight_mode_lth);                  
       break;
     case PING_DEVICES_ID:
-#if defined DEMO_CRSF_GPS_PING_DEVICES 
+#if defined SHOW_CRSF_GPS_PING_DEVICES 
       log.print("PING_DEVICES:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case DEVICE_INFO_ID:
-#if defined DEMO_CRSF_DEVIDE_INFO 
+#if defined SHOW_CRSF_DEVIDE_INFO 
       log.print("DEVICE_INFO:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case REQUEST_SETTINGS_ID:
-#if defined DEMO_CRSF_REQUEST_SETTINGS 
+#if defined SHOW_CRSF_REQUEST_SETTINGS 
       log.print("REQUEST_SETTINGS:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case COMMAND_ID:
-#if defined DEMO_CRSF_COMMAND 
+#if defined SHOW_CRSF_COMMAND 
       log.print("COMMAND:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break; 
     case RADIO_ID:
-#if defined DEMO_CRSF_RADIO 
+#if defined SHOW_CRSF_RADIO 
       log.print("RADIO id:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break; 
     default:
-      log.print("crsf_id:");
-      printByte(crsf_id, ' ');
-      log.println("UNKNOWN");
+      #if defined SHOW_OTHER_FRAME_IDs
+        log.print("crsf_id:");
+        printByte(crsf_id, ' ');
+        log.println();
+        //log.print("UNKNOWN  ");
+        //printBytes(&*_buf, crsf_frm_lth+2); // plus header and CRC bytes
+      #endif  
+      unknown_ids++;
       return 0;
     }
     return crsf_id;
@@ -403,14 +497,14 @@ void CRSF::decodeRC()
 {
 #if defined SHOW_BUFFER
   log.print("CRSF_BUF:");
-  printBytes(&*crsf_buf, 24); // sync (lth) byte + 22 RC bytes
+  printBytes(&*crsf_buf, 26); // sync byte(0xEE) + 2 + 22 RC bytes +CRC
 #endif
-  bytesToPWM(&*(crsf_buf+1), &*pwm_val, max_ch);
-#if defined SEND_SBUS || defined DEMO_SBUS
-  memcpy(&*rc_bytes, &*(crsf_buf + 1), 22);
+  bytesToPWM(&*(crsf_buf+3), &*pwm_val, max_ch);  // note skip 3B
+#if defined SUPPORT_SBUS_OUT || defined SHOW_SBUS
+  memcpy(&*rc_bytes, &*(crsf_buf + 3), 22);       // note skip 3B
   prepSBUS(&*rc_bytes, &*sb_bytes, false, false);
 #endif
-#if defined SEND_SBUS
+#if defined SUPPORT_SBUS_OUT
   sendSBUS(&*sb_bytes);
 #endif
  
