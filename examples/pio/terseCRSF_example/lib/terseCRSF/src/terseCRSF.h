@@ -10,25 +10,49 @@
 
 #define MAJOR_VER          0
 #define MINOR_VER          0
-#define PATCH_LEV          4 
+#define PATCH_LEV          5 
+
+#define TELEMETRY_SOURCE  1  // BetaFlight/CF
+//#define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
+
+#if not defined TELEMETRY_SOURCE
+  #define TELEMETRY_SOURCE  1
+#endif
 
 /*
   Changelog
-  2024-05-13 Add SHOW_BYTE_STREAM debug option
+  V0.0.4  2024-05-13 Add SHOW_BYTE_STREAM debug option
+  V0.0.5  2024-05-17 Fix flight-mode position and length
+          2025-05-18 Rationalise macros
+             Add Telemetry source selection
 */
 
-//=========  D E M O   M A C R O S  ========
+//=========  D E M O / D E B U G   M A C R O S  ========
+
 //#define DEMO_PWM_VALUES
 //#define DEMO_SBUS
-//#define DEMO_CRSF_GPS
-//#define DEMO_CRSF_BATTERY
-//#define DEMO_CRSF_LINK
-//#define DEMO_CRSF_ATTITUDE
-//#define DEMO_CRSF_FLIGHT_MODE
+#define DEMO_CRSF_GPS
+#define DEMO_CRSF_BATTERY
+#define DEMO_CRSF_LINK
+#define DEMO_CRSF_ATTITUDE
+#define DEMO_CRSF_FLIGHT_MODE
+
 //#define SHOW_BUFFER
 //#define SHOW_BYTE_STREAM
-//#define SHOW_LINK_STATS
 //#define SHOW_LOOP_PERIOD
+
+#define SHOW_CRSF_CF_VARIO 
+#define SHOW_CRSF_BARO   
+#define SHOW_LINK_STATS
+#define SHOW_CRSF_CHANNELS 
+#define SHOW_CRSF_LINK_RX 
+#define SHOW_CRSF_LINK_TX
+#define SHOW_CRSF_DEVIDE_INFO
+#define SHOW_CRSF_REQUEST_SETTINGS 
+#define SHOW_CRSF_COMMAND 
+#define SHOW_CRSF_RADIO 
+#define SHOW_OTHER_FRAME_IDs
+
 //==========================================
 
 #define log   Serial
@@ -59,10 +83,13 @@ typedef enum sbus_mode_state
 #define COMMAND_ID                     0x32
 #define RADIO_ID                       0x3A
 
-#define CRSF_TEL_SYNC_BYTE             0xC8 
+#if (TELEMETRY_SOURCE  == 1)      // BetaFlight
+  #define CRSF_TEL_SYNC_BYTE  0xC8 
+#elif (TELEMETRY_SOURCE  == 2)    // EdgeTX/OpenTx
+  #define CRSF_TEL_SYNC_BYTE             0xEA  
+#endif
+
 #define CRSF_RC_SYNC_BYTE              0xEE
-//#define CRSF_RC_SYNC_BYTE1             24   // 0x18 these are repeating frame length values
-//#define CRSF_RC_SYNC_BYTE2             22   // 0x16 byte pair close to unique
 
 class CRSF
 {

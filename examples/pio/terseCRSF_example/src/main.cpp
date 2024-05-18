@@ -1,15 +1,8 @@
 #include <Arduino.h>
-#include <terseCRSF.h>
-//#define RC_BUILD         // ELSE TELEMETRY BUILD
+#include <terseCRSF.h> 
+// Select RC or telemetry, telem source-type and any debug macros in terseCRSF.h
 
-#if defined RC_BUILD
-  //#define SUPPORT_SBUS_OUT 
-#endif
-
-#define DEMO_PWM_VALUES
-#define DEMO_SBUS
-
-#if defined RC_BUILD
+#if defined RC_BUILD     // Radio Control Build
     #define crsf_rxPin      13      // Signal pin transmitter in bay tx
     #define crsf_txPin      14      // GREEN tx to FC LIGHT BLUE 
     #define crsf_invert     true
@@ -21,7 +14,7 @@
     #define sbus_invert     true  
     sbmode_t sbus_mode = sbm_normal; //normal - baud - 100000b/s, fast - baud = 200000b/s
   #endif     
-#else
+#else                   // Telemetry Build
     #define crsf_invert     false
     #define crsf_rxPin      27      //16 YELLOW rx from GREEN FC tx
     #define crsf_txPin      17      // GREEN tx to YELLOW FC rx    
@@ -30,7 +23,12 @@
 #define log   Serial
 
 #define crsf_uart            1              // Serial1
-#define crsf_baud           420000
+#if (TELEMETRY_SOURCE  == 1)                // Telemetry from BetaFlight/CF
+  #define crsf_baud          420000
+#elif (TELEMETRY_SOURCE  == 2)              // EdgeTX/OpenTx
+  #define crsf_baud          115200         // Telemetry from RadioMaster TX16S AUX2
+#endif
+
 HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
 
 CRSF crsf;                                  // instantiate CRSF object
@@ -52,8 +50,9 @@ void setup() {
 
   crsfSerial.begin(crsf_baud, SERIAL_8N1, crsf_rxPin, crsf_txPin, crsf_invert);
   log.printf("CRFS uart:%u  baud:%u  rxPin:%u  txPin:%u  invert:%u\n", crsf_uart, crsf_baud, crsf_rxPin, crsf_txPin, crsf_invert);
-  crsf.initialise(crsfSerial);  
-  #if defined SUPPORT_SBUS_OUT
+  crsf.initialise(crsfSerial);
+
+#if defined SUPPORT_SBUS_OUT
     uint32_t sbus_baud = 0;
     if (sbus_mode == sbm_fast)
     {

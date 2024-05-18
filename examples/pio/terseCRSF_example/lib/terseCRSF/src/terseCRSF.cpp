@@ -20,9 +20,15 @@ bool CRSF::initialise(Stream &port)
   log.print("terseCRSF by zs6buj");
   log.printf(" version:%d.%02d.%02d\n", MAJOR_VER, MINOR_VER, PATCH_LEV);
 #if defined RC_BUILD
-  log.println("RC_BUILD");
+  log.println("RC Build. Expected source is EdgeTX/OpenTX");
 #else
-  log.println("TELEMETRY_BUILD");
+  log.print("Telemetry Build. ");
+#if (TELEMETRY_SOURCE  == 1)      // BetaFlight
+    log.println("Expected source is BetaFlight/CF");
+#elif (TELEMETRY_SOURCE  == 2)    // EdgeTX/OpenTx
+    log.println("Expected source is EdgeTX/OpenTX");
+#endif
+
 #endif
 return true;
 }
@@ -371,8 +377,9 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
       gps_sats = (uint8_t)_buf[17];
       break;
     case CF_VARIO_ID:
-#if defined DEMO_CRSF_CF_VARIO 
+#if defined SHOW_CRSF_CF_VARIO 
       log.print("CF_VARIO:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif 
       break;
     case BATTERY_ID:
@@ -385,13 +392,15 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
       bat_remaining = (uint8_t)_buf[10];              // percent
       break;
     case BARO_ALT_ID:
-#if defined DEMO_CRSF_BARO     
+#if defined SHOW_CRSF_BARO     
       log.print("BARO_ALT:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
        break; 
     case HEARTBEAT_ID:
-#if defined DEMO_CRSF_HEARTBEAT 
+#if defined SHOW_CRSF_HEARTBEAT 
       log.print("HEARTBEAT:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
        break;     
     case LINK_ID:  // 0x14 Link statistics
@@ -407,18 +416,21 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
       link_dn_snr = (int8_t)_buf[12];                 // db
       break;
     case CHANNELS_ID:
-#if defined DEMO_CRSF_CHANNELS 
+#if defined SHOW_CRSF_CHANNELS 
       log.print("CHANNELS:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case LINK_RX_ID:
-#if defined DEMO_CRSF_LINK_RX 
+#if defined SHOW_CRSF_LINK_RX 
       log.print("LINK_RX:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case LINK_TX_ID:
-#if defined DEMO_CRSF_LINK_TX 
+#if defined SHOW_CRSF_LINK_TX 
       log.print("LINK_TX:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case ATTITUDE_ID:
@@ -433,45 +445,48 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
       break;
     case FLIGHT_MODE_ID:
       /* HUH! Flight mode is a string*/
-      flight_mode_lth = crsf_frm_lth - 4;
-      memcpy(&flightMode, &_buf[4], flight_mode_lth);
-      //printBytes(&_buf[4], flight_mode_lth);                  
-#if defined DEMO_CRSF_FLIGHT_MODE
-      log.print("FLIGHT_MODE id:");
-      printByte(crsf_id, ' ');
-      printf("lth:%u %s\n",flight_mode_lth, &flightMode);
-#endif
+      flight_mode_lth = crsf_frm_lth - 3;              // fix 2024-05-17
+      memcpy(&flightMode, &_buf[3], flight_mode_lth);  // fix 2024-05-17
+      //printBytes(&_buf[3], flight_mode_lth);                  
       break;
     case PING_DEVICES_ID:
-#if defined DEMO_CRSF_GPS_PING_DEVICES 
+#if defined SHOW_CRSF_GPS_PING_DEVICES 
       log.print("PING_DEVICES:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case DEVICE_INFO_ID:
-#if defined DEMO_CRSF_DEVIDE_INFO 
+#if defined SHOW_CRSF_DEVIDE_INFO 
       log.print("DEVICE_INFO:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case REQUEST_SETTINGS_ID:
-#if defined DEMO_CRSF_REQUEST_SETTINGS 
+#if defined SHOW_CRSF_REQUEST_SETTINGS 
       log.print("REQUEST_SETTINGS:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break;
     case COMMAND_ID:
-#if defined DEMO_CRSF_COMMAND 
+#if defined SHOW_CRSF_COMMAND 
       log.print("COMMAND:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break; 
     case RADIO_ID:
-#if defined DEMO_CRSF_RADIO 
+#if defined SHOW_CRSF_RADIO 
       log.print("RADIO id:");
+      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
 #endif
       break; 
     default:
-      //log.print("crsf_id:");
-      //printByte(crsf_id, ' ');
-      //log.print("UNKNOWN  ");
-      //printBytes(&*_buf, crsf_frm_lth+2); // plus header and CRC bytes
+      #if defined SHOW_OTHER_FRAME_IDs
+        log.print("crsf_id:");
+        printByte(crsf_id, ' ');
+        log.println();
+        //log.print("UNKNOWN  ");
+        //printBytes(&*_buf, crsf_frm_lth+2); // plus header and CRC bytes
+      #endif  
       unknown_ids++;
       return 0;
     }
@@ -485,7 +500,7 @@ void CRSF::decodeRC()
   printBytes(&*crsf_buf, 26); // sync byte(0xEE) + 2 + 22 RC bytes +CRC
 #endif
   bytesToPWM(&*(crsf_buf+3), &*pwm_val, max_ch);  // note skip 3B
-#if defined SUPPORT_SBUS_OUT || defined DEMO_SBUS
+#if defined SUPPORT_SBUS_OUT || defined SHOW_SBUS
   memcpy(&*rc_bytes, &*(crsf_buf + 3), 22);       // note skip 3B
   prepSBUS(&*rc_bytes, &*sb_bytes, false, false);
 #endif

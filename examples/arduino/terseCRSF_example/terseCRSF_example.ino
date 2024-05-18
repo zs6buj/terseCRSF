@@ -1,14 +1,6 @@
-//version 0.0.4
+//version 0.0.5
 #include <terseCRSF.h>  
-
-//=========  D E M O   M A C R O S  ========
-//#define DEMO_PWM_VALUES
-//#define DEMO_CRSF_GPS
-//#define DEMO_CRSF_BATTERY
-//#define DEMO_CRSF_LINK
-//#define DEMO_CRSF_ATTITUDE
-//#define DEMO_CRSF_FLIGHT_MODE
-//#define SHOW_LOOP_PERIOD
+// Select RC or telemetry, telem source-type and any debug macros in terseCRSF.h
 
 #if defined RC_BUILD
     #define crsf_rxPin      13      // Signal tx pin, transmitter, in back bay
@@ -23,7 +15,11 @@
 #define log   Serial
 
 #define crsf_uart            1              // Serial1
-#define crsf_baud           400000
+#if (TELEMETRY_SOURCE  == 1)                // Telemetry from BetaFlight/CF
+  #define crsf_baud          420000
+#elif (TELEMETRY_SOURCE  == 2)              // EdgeTX/OpenTx
+  #define crsf_baud          115200         // Telemetry from RadioMaster TX16S AUX2
+#endif
 HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
 
 CRSF crsf;            // instantiate CRSF object
