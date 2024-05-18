@@ -86,7 +86,7 @@ typedef enum sbus_mode_state
 #if (TELEMETRY_SOURCE  == 1)      // BetaFlight
   #define CRSF_TEL_SYNC_BYTE  0xC8 
 #elif (TELEMETRY_SOURCE  == 2)    // EdgeTX/OpenTx
-  #define CRSF_TEL_SYNC_BYTE             0xEA  
+  #define CRSF_TEL_SYNC_BYTE  0xEA  
 #endif
 
 #define CRSF_RC_SYNC_BYTE              0xEE
