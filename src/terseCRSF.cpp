@@ -260,18 +260,17 @@ bool CRSF::readCrsfFrame(uint8_t &frm_lth)
   static uint8_t embed_lth = 0;
   static uint8_t crsf_crc = 0;
   uint8_t embed_crc = 0;
-
-  while (crsf_port->available())
-  {
-      if (idx == 0)
+      while (crsf_port->available())
       {
-        memset(crsf_buf, 0, crsf_buffer_size);    // flush the crsf_buf
-#if defined RC_BUILD
-        if (b == CRSF_RC_SYNC_BYTE)               // prev read byte    
+        if (idx == 0)
         {
-          crsf_buf[0] = b;                        // to front of buf
+          memset(crsf_buf, 0, crsf_buffer_size);    // flush the crsf_buf
+  #if defined RC_BUILD
+          if (b == CRSF_RC_SYNC_BYTE)               // prev read byte    
+          {
+            crsf_buf[0] = b;                        // to front of buf
+          }
         }
-      }
 #else   // TELEM BUILD
       if (b == CRSF_TEL_SYNC_BYTE)               // prev read byte    
         {

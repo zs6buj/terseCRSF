@@ -21,9 +21,9 @@
 
 /*
   Changelog
-  V0.0.4  2024-05-13 Add SHOW_BYTE_STREAM debug option
-  V0.0.5  2024-05-17 Fix flight-mode position and length
-          2025-05-18 Rationalise macros
+  2024-05-13 Add SHOW_BYTE_STREAM debug option
+  2024-05-17 Fix flight-mode position and length
+  2025-05-18 Rationalise macros
              Add Telemetry source selection
 */
 

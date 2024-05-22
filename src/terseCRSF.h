@@ -12,8 +12,8 @@
 #define MINOR_VER          0
 #define PATCH_LEV          5 
 
-#define TELEMETRY_SOURCE  1  // BetaFlight/CF
-//#define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
+//#define TELEMETRY_SOURCE  1  // BetaFlight/CF
+#define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
 
 #if not defined TELEMETRY_SOURCE
   #define TELEMETRY_SOURCE  1
@@ -21,9 +21,9 @@
 
 /*
   Changelog
-  V0.0.4  2024-05-13 Add SHOW_BYTE_STREAM debug option
-  V0.0.5  2024-05-17 Fix flight-mode position and length
-          2025-05-18 Rationalise macros
+  2024-05-13 Add SHOW_BYTE_STREAM debug option
+  2024-05-17 Fix flight-mode position and length
+  2025-05-18 Rationalise macros
              Add Telemetry source selection
 */
 
@@ -32,10 +32,10 @@
 //#define DEMO_PWM_VALUES
 //#define DEMO_SBUS
 #define DEMO_CRSF_GPS
-#define DEMO_CRSF_BATTERY
-#define DEMO_CRSF_LINK
-#define DEMO_CRSF_ATTITUDE
-#define DEMO_CRSF_FLIGHT_MODE
+//#define DEMO_CRSF_BATTERY
+//#define DEMO_CRSF_LINK
+//#define DEMO_CRSF_ATTITUDE
+//#define DEMO_CRSF_FLIGHT_MODE
 
 //#define SHOW_BUFFER
 //#define SHOW_BYTE_STREAM
@@ -43,7 +43,7 @@
 
 #define SHOW_CRSF_CF_VARIO 
 #define SHOW_CRSF_BARO   
-#define SHOW_LINK_STATS
+//#define SHOW_LINK_STATS
 #define SHOW_CRSF_CHANNELS 
 #define SHOW_CRSF_LINK_RX 
 #define SHOW_CRSF_LINK_TX
