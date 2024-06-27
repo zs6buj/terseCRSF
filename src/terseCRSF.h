@@ -10,7 +10,7 @@
 
 #define MAJOR_VER          0
 #define MINOR_VER          0
-#define PATCH_LEV          5 
+#define PATCH_LEV          6 
 
 //#define TELEMETRY_SOURCE  1  // BetaFlight/CF
 #define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
@@ -21,10 +21,12 @@
 
 /*
   Changelog
-  2024-05-13 Add SHOW_BYTE_STREAM debug option
-  2024-05-17 Fix flight-mode position and length
-  2025-05-18 Rationalise macros
-             Add Telemetry source selection
+  v0.0.3 2024-05-13 Add SHOW_BYTE_STREAM debug option
+  v0.0.4 2024-05-17 Fix flight-mode position and length
+  v0.0.5 2025-05-18 Rationalise macros
+                    Add Telemetry source selection
+  v0.0.6 2025-06-26 Add UART, UDP, BT telemetry example
+                    Divide Battery Volts and Amps by 10
 */
 
 //=========  D E M O / D E B U G   M A C R O S  ========
@@ -32,18 +34,18 @@
 //#define DEMO_PWM_VALUES
 //#define DEMO_SBUS
 #define DEMO_CRSF_GPS
-//#define DEMO_CRSF_BATTERY
+#define DEMO_CRSF_BATTERY
 //#define DEMO_CRSF_LINK
-//#define DEMO_CRSF_ATTITUDE
-//#define DEMO_CRSF_FLIGHT_MODE
+#define DEMO_CRSF_ATTITUDE
+#define DEMO_CRSF_FLIGHT_MODE
 
-//#define SHOW_BUFFER
+#define SHOW_BUFFER
 //#define SHOW_BYTE_STREAM
 //#define SHOW_LOOP_PERIOD
 
 #define SHOW_CRSF_CF_VARIO 
 #define SHOW_CRSF_BARO   
-//#define SHOW_LINK_STATS
+#define SHOW_LINK_STATS
 #define SHOW_CRSF_CHANNELS 
 #define SHOW_CRSF_LINK_RX 
 #define SHOW_CRSF_LINK_TX
@@ -180,7 +182,7 @@ public:
   bool initialise(Stream& port);
   bool sbus_initialise(Stream& port);
   bool readCrsfFrame(uint8_t &lth);
-  uint8_t decodeTelemetry(uint8_t *_buf);
+  uint8_t decodeTelemetry(uint8_t *_buf, uint8_t len);
   void decodeRC();
   void printByte(byte b, char delimiter);
   void printBytes(uint8_t *buf, uint8_t len);

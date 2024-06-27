@@ -96,7 +96,7 @@ void CRSF::printPWM(uint16_t *ch, uint8_t num_of_channels)
 //========================================================
 void CRSF::printBytes(uint8_t *buf, uint8_t len)
 {
-  //log.print("bytes: ");
+  log.printf("len:%2u:", len);
   for (int i = 0; i < len; i++)
   {
     printByte(buf[i], ' ');
@@ -349,7 +349,7 @@ void CRSF::sendSBUS(uint8_t *sb_buf)
 }
 #endif
 //========================================================
-uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
+uint8_t CRSF::decodeTelemetry(uint8_t *_buf, uint8_t len)
 {
   uint8_t crsf_frm_lth = _buf[1];   
   uint8_t crsf_id = _buf[2];
@@ -359,7 +359,7 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
     }
 #if defined SHOW_BUFFER
   log.print("CRSF_BUF:");
-  printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+  printBytes(&*_buf, len); // plus header and crc bytes
 #endif
     switch (crsf_id)
     {
@@ -379,14 +379,14 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
     case CF_VARIO_ID:
 #if defined SHOW_CRSF_CF_VARIO 
       log.print("CF_VARIO:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif 
       break;
     case BATTERY_ID:
       bat_voltage = bytes2uint16(&_buf[3]);           // mV * 100
-      batF_voltage = (float)bat_voltage * 10;         // volts
+      batF_voltage = (float)bat_voltage;         // volts
       bat_current = bytes2uint16(&_buf[5]);           // mA * 100
-      batF_current = bat_current * 10;                // amps
+      batF_current = bat_current;                // amps
       bat_fuel_drawn = bytes2int32(&_buf[7]);         // uint24_t    mAh drawn
       batF_fuel_drawn = bat_fuel_drawn * 1e3;         // Ah drawn
       bat_remaining = (uint8_t)_buf[10];              // percent
@@ -394,13 +394,13 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
     case BARO_ALT_ID:
 #if defined SHOW_CRSF_BARO     
       log.print("BARO_ALT:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
        break; 
     case HEARTBEAT_ID:
 #if defined SHOW_CRSF_HEARTBEAT 
       log.print("HEARTBEAT:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
        break;     
     case LINK_ID:  // 0x14 Link statistics
@@ -418,19 +418,19 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
     case CHANNELS_ID:
 #if defined SHOW_CRSF_CHANNELS 
       log.print("CHANNELS:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break;
     case LINK_RX_ID:
 #if defined SHOW_CRSF_LINK_RX 
       log.print("LINK_RX:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break;
     case LINK_TX_ID:
 #if defined SHOW_CRSF_LINK_TX 
       log.print("LINK_TX:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break;
     case ATTITUDE_ID:
@@ -452,31 +452,31 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
     case PING_DEVICES_ID:
 #if defined SHOW_CRSF_GPS_PING_DEVICES 
       log.print("PING_DEVICES:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break;
     case DEVICE_INFO_ID:
 #if defined SHOW_CRSF_DEVIDE_INFO 
       log.print("DEVICE_INFO:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break;
     case REQUEST_SETTINGS_ID:
 #if defined SHOW_CRSF_REQUEST_SETTINGS 
       log.print("REQUEST_SETTINGS:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break;
     case COMMAND_ID:
 #if defined SHOW_CRSF_COMMAND 
       log.print("COMMAND:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break; 
     case RADIO_ID:
 #if defined SHOW_CRSF_RADIO 
       log.print("RADIO id:");
-      printBytes(&*_buf, crsf_frm_lth+2); // plus header and crc bytes
+      printBytes(&*_buf, len); // plus header and crc bytes
 #endif
       break; 
     default:
@@ -485,7 +485,7 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf)
         printByte(crsf_id, ' ');
         log.println();
         //log.print("UNKNOWN  ");
-        //printBytes(&*_buf, crsf_frm_lth+2); // plus header and CRC bytes
+        //printBytes(&*_buf, len); // plus header and CRC bytes
       #endif  
       unknown_ids++;
       return 0;
