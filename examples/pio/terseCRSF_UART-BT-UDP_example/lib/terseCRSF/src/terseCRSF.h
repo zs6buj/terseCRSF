@@ -127,7 +127,7 @@ uint16_t    gps_groundspeed = 0;
 float       gpsF_groundspeed = 0.0;   // km/hr
 uint16_t    gps_heading = 0;  
 float       gpsF_heading = 0.0;       // deg
-uint16_t    gps_altitude = 0;         // metres, 1000m offset
+int16_t     gps_altitude = 0;         // metres, 1000m offset
 uint8_t     gps_sats = 0;
 
 /* Battery ID:0x08 */
