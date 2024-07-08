@@ -384,11 +384,11 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf, uint8_t len)
       break;
     case BATTERY_ID:
       bat_voltage = bytes2uint16(&_buf[3]);           // mV * 100
-      batF_voltage = (float)bat_voltage;         // volts
+      batF_voltage = (float)bat_voltage * 0.1;        // volts
       bat_current = bytes2uint16(&_buf[5]);           // mA * 100
-      batF_current = bat_current;                // amps
+      batF_current = bat_current * 0.1;               // amps
       bat_fuel_drawn = bytes2int32(&_buf[7]);         // uint24_t    mAh drawn
-      batF_fuel_drawn = bat_fuel_drawn * 1e3;         // Ah drawn
+      batF_fuel_drawn = bat_fuel_drawn;               // Ah drawn
       bat_remaining = (uint8_t)_buf[10];              // percent
       break;
     case BARO_ALT_ID:
