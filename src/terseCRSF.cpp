@@ -96,7 +96,7 @@ void CRSF::printPWM(uint16_t *ch, uint8_t num_of_channels)
 //========================================================
 void CRSF::printBytes(uint8_t *buf, uint8_t len)
 {
-  log.printf("len:%2u:", len);
+  //log.printf("len:%2u:", len);
   for (int i = 0; i < len; i++)
   {
     printByte(buf[i], ' ');

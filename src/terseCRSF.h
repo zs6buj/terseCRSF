@@ -10,7 +10,7 @@
 
 #define MAJOR_VER          0
 #define MINOR_VER          0
-#define PATCH_LEV          6 
+#define PATCH_LEV          7 
 
 //#define TELEMETRY_SOURCE  1  // BetaFlight/CF
 #define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
