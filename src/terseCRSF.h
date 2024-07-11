@@ -23,10 +23,11 @@
   Changelog
   v0.0.3 2024-05-13 Add SHOW_BYTE_STREAM debug option
   v0.0.4 2024-05-17 Fix flight-mode position and length
-  v0.0.5 2025-05-18 Rationalise macros
+  v0.0.5 2024-05-18 Rationalise macros
                     Add Telemetry source selection
-  v0.0.6 2025-06-26 Add UART, UDP, BT telemetry example
+  v0.0.6 2024-06-26 Add UART, UDP, BT telemetry example
                     Divide Battery Volts and Amps by 10
+  V0.0.7 2024-07-09 Divide by V & A by a further 10
 */
 
 //=========  D E M O / D E B U G   M A C R O S  ========
