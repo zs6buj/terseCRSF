@@ -10,7 +10,7 @@
 
 #define MAJOR_VER          0
 #define MINOR_VER          0
-#define PATCH_LEV          8 
+#define PATCH_LEV          7
 
 //#define TELEMETRY_SOURCE  1  // BetaFlight/CF
 #define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
@@ -40,7 +40,7 @@
 #define DEMO_CRSF_ATTITUDE
 #define DEMO_CRSF_FLIGHT_MODE
 
-//#define SHOW_BUFFER
+#define SHOW_BUFFER
 //#define SHOW_BYTE_STREAM
 //#define SHOW_LOOP_PERIOD
 

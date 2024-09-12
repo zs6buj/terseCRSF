@@ -3,24 +3,25 @@
 // Select RC or telemetry, telem source-type and any debug macros in terseCRSF.h
 
 #if defined RC_BUILD
-    #define crsf_rxPin      13      // Signal tx pin, transmitter, in back bay
-    #define crsf_txPin      14      // 
+    #define crsf_rxPin      A3      // Signal tx pin, transmitter, in back bay
+    #define crsf_txPin      A2      // 
     #define crsf_invert     true
 #else
     #define crsf_invert     false
-    #define crsf_rxPin      27      
-    #define crsf_txPin      17       
+    #define crsf_rxPin      A3      
+    #define crsf_txPin      A2       
 #endif
 
 #define log   Serial
 
-#define crsf_uart            1              // Serial1
+//#define crsf_uart            1              // Serial1
 #if (TELEMETRY_SOURCE  == 1)                // Telemetry from BetaFlight/CF
   #define crsf_baud          420000
 #elif (TELEMETRY_SOURCE  == 2)              // EdgeTX/OpenTx
   #define crsf_baud          115200         // Telemetry from RadioMaster TX16S AUX2
 #endif
-HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
+      HardwareSerial crsfSerial(USART2); //Serial 1rx2=PA3  tx2=PA2  - for telemetry in
+//HardwareSerial crsfSerial(crsf_uart);       // instantiate Serial object
 
 CRSF crsf;            // instantiate CRSF object
 
@@ -38,8 +39,9 @@ void printLoop1(bool newline)
 void setup() {
   log.begin(115200);
   delay(2000);
-  crsfSerial.begin(crsf_baud, SERIAL_8N1, crsf_rxPin, crsf_txPin, crsf_invert);
-  log.printf("CRFS uart:%u  baud:%u  rxPin:%u  txPin:%u  invert:%u\n", crsf_uart, crsf_baud, crsf_rxPin, crsf_txPin, crsf_invert);
+  log.println("Starting...");
+  crsfSerial.begin(crsf_baud);
+  log.printf("baud:%u\n", crsf_baud);
   crsf.initialise(crsfSerial);  
 }
 

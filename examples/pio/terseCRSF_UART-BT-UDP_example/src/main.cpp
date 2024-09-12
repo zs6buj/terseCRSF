@@ -7,9 +7,9 @@
 // Select RC or telemetry build, telem source-type and any debug macros in terseCRSF.h
 
 // Choose only one input medium 
-//#define MEDIUM_IN  1    // UART (Serial)       
-//#define MEDIUM_IN  2    // WiFi - ESP only
-#define MEDIUM_IN  3    // Bluetooth (Serial) - ESP32 only
+#define MEDIUM_IN  1    // UART (Serial)       
+//#define MEDIUM_IN  2    // WiFi UDP - ESP only
+//#define MEDIUM_IN  3    // Bluetooth (Serial) - ESP32 only
 
 #if (MEDIUM_IN  == 1)      // UART select
   #if defined RC_BUILD     // Radio Control Build
@@ -42,7 +42,6 @@
 #endif  // end of UART select
 
 #if (MEDIUM_IN  == 2)      // WiFi UDP select
-
     //#define WIFI_MODE   1  //AP
     #define WIFI_MODE   2  // STA
 
@@ -73,7 +72,6 @@
     bool wifiStaConnected = false;
     bool inbound_clientGood = false;
     bool wifiDisconnected = false;
-    bool outbound_clientGood = false;
     bool showRemoteIP = true;
     bool wifi_recv_good = false;
     uint32_t wifi_retry_millis = 0;
@@ -140,10 +138,6 @@ void printLoop1(bool newline)
     {
       AP_prev_sta_count = AP_sta_count;
       log.printf("Remote STA %d connected to our AP\n", AP_sta_count);
-      #if (WIFI_PROTOCOL == 1)  // TCP
-        if (!outbound_clientGood) // and we don't have an active tcp session, start a new session
-          outbound_clientGood = newOutboundTCPClient();
-      #endif
     }
     else if (AP_sta_count < AP_prev_sta_count)
     { // a device has disconnected from the AP
@@ -300,12 +294,7 @@ void printLoop1(bool newline)
 
       log.print("Local IP address: ");
       log.print(localIP);
-      #if (WIFI_PROTOCOL == 1)      // TCP 
-        log.print("  port: ");
-        log.println(TCP_LOCALPORT); 
-      #else
-        log.println();
-      #endif
+      log.println();
 
       int16_t wifi_rssi = WiFi.RSSI();
       log.print("WiFi RSSI:");
