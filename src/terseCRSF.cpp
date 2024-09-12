@@ -445,8 +445,9 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf, uint8_t len)
       break;
     case FLIGHT_MODE_ID:
       /* HUH! Flight mode is a string*/
-      flight_mode_lth = crsf_frm_lth - 3;              // fix 2024-05-17
-      memcpy(&flightMode, &_buf[3], flight_mode_lth);  // fix 2024-05-17
+      flight_mode_lth = crsf_frm_lth - 3;                 // fix 2024-05-17
+      flightMode.resize(flight_mode_lth);                 // fix 2024-09-12
+      memcpy(&flightMode[0], &_buf[3], flight_mode_lth);  // fix 2024-05-17
       //printBytes(&_buf[3], flight_mode_lth);                  
       break;
     case PING_DEVICES_ID:

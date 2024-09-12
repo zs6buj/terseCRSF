@@ -155,7 +155,7 @@ void loop()
 #if defined DEMO_CRSF_FLIGHT_MODE 
       log.print("FLIGHT_MODE id:");
       crsf.printByte(crsf_id, ' ');
-      log.printf("lth:%u %s\n", crsf.flight_mode_lth, &crsf.flightMode);
+      log.printf("lth:%u %s\n", crsf.flight_mode_lth, crsf.flightMode.c_str());
 #endif
     }
 #endif // end of Telemetry
