@@ -1,8 +1,4 @@
 //version 0.0.8
-#define RC_BUILD // force RC Build regardless of terseCRSF.h
-#define DEMO_PWM_VALUES
-#define SUPPORT_SBUS_OUT 
-
 #include <terseCRSF.h>  
 
 // Select RC or telemetry, telem source-type and any debug macros in terseCRSF.h

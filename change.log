@@ -10,3 +10,4 @@ v0.0.6 2024-06-26   Add UART, UDP, BT telemetry example
                     Divide Battery Volts and Amps by 10
 v0.0.7 2024-07-08   Divide V and A by a further 10, divide mAh by 1E3
 v0.0.8 2024-09-12   Update examples, add stm32 example
+v0.0.8d2025-05-08   Update STM32_RC_example

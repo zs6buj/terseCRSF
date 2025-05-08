@@ -3,9 +3,9 @@
 #include <string>
 #include <HardwareSerial.h>
 
-//#define RC_BUILD    // else TELEMETRY_BUILD
+#define RC_BUILD    // else TELEMETRY_BUILD
 #if defined RC_BUILD
-  //#define SUPPORT_SBUS_OUT 
+  #define SUPPORT_SBUS_OUT 
 #endif
 
 #define MAJOR_VER          0
@@ -19,11 +19,22 @@
   #define TELEMETRY_SOURCE  1
 #endif
 
+/*
+  Changelog
+  v0.0.3 2024-05-13 Add SHOW_BYTE_STREAM debug option
+  v0.0.4 2024-05-17 Fix flight-mode position and length
+  v0.0.5 2024-05-18 Rationalise macros
+                    Add Telemetry source selection
+  v0.0.6 2024-06-26 Add UART, UDP, BT telemetry example
+                    Divide Battery Volts and Amps by 10
+  V0.0.7 2024-07-09 Divide by V & A by a further 10
+    v0.0.8 2024-08-12 Add STM32 example
+*/
 
 //=========  D E M O / D E B U G   M A C R O S  ========
 
-//#define DEMO_PWM_VALUES
-//#define DEMO_SBUS
+#define DEMO_PWM_VALUES
+#define DEMO_SBUS
 #define DEMO_CRSF_GPS
 #define DEMO_CRSF_BATTERY
 //#define DEMO_CRSF_LINK
