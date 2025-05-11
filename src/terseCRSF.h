@@ -3,27 +3,29 @@
 #include <string>
 #include <HardwareSerial.h>
 
-//#define RC_BUILD    // else TELEMETRY_BUILD
+#define RC_BUILD    // else TELEMETRY_BUILD
 #if defined RC_BUILD
-  //#define SUPPORT_SBUS_OUT 
+  #define RSSI_CHANNEL 16  // Often channel 16
+  #define SUPPORT_SBUS_OUT 
 #endif
 
 #define MAJOR_VER          0
 #define MINOR_VER          0
-#define PATCH_LEV          8 
+#define PATCH_LEV          9 
 
-//#define TELEMETRY_SOURCE  1  // BetaFlight/CF
-#define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
+#define TELEMETRY_SOURCE  1  // BetaFlight/CF
+//#define TELEMETRY_SOURCE  2  // EdgeTX/OpenTX
 
 #if not defined TELEMETRY_SOURCE
   #define TELEMETRY_SOURCE  1
 #endif
 
-
 //=========  D E M O / D E B U G   M A C R O S  ========
 
-//#define DEMO_PWM_VALUES
-//#define DEMO_SBUS
+#if defined SUPPORT_SBUS_OUT
+    #define DEMO_SBUS
+#endif    
+#define DEMO_PWM_VALUES
 #define DEMO_CRSF_GPS
 #define DEMO_CRSF_BATTERY
 //#define DEMO_CRSF_LINK
@@ -100,9 +102,10 @@ const uint8_t   max_rc_bytes      = 22; // just the RC bytes, not the full sbus
 const uint8_t   sbus_buffer_size  = 25; // Header(1) + RC_bytes(22) + status(1)(los+fs) + footer(1)
 const uint8_t   max_ch            = 8;  // max 18
 
+uint8_t rssi_percent = 0;
+
 uint8_t   frame_lth = 0;
-uint8_t   crsf_buf[64] {};     // sizes as per above
-uint8_t   rc_bytes[22] {};             
+uint8_t   crsf_buf[64] {};     // sizes as per above          
 uint8_t   sb_bytes[25] {};    
 uint16_t  pwm_val[8] {};  
 
@@ -169,12 +172,12 @@ private:
   uint16_t unknown_ids = 0;
 
 public:
-  //CRSF();   // for 
+
   bool initialise(Stream& port);
   bool sbus_initialise(Stream& port);
   bool readCrsfFrame(uint8_t &lth);
   uint8_t decodeTelemetry(uint8_t *_buf, uint8_t len);
-  void decodeRC();
+  void decodeRC(uint8_t *_buf);
   void printByte(byte b, char delimiter);
   void printBytes(uint8_t *buf, uint8_t len);
   void printPWM(uint16_t *ch, uint8_t num_of_channels);
@@ -189,9 +192,9 @@ private:
   bool fixBadRc(uint8_t *);
   void prepSBUS(uint8_t *rc_buf, uint8_t *sb_buf, bool _los, bool _failsafe);
 #if defined SUPPORT_SBUS_OUT
-  void sendSBUS(uint8_t *sb_buf);
+  void sendSBUS(uint8_t *_buf);
 #endif
-  bool bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch);
+  bool bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch, uint8_t rssi_per);
   void pwmToBytes(uint16_t *in_pwm, uint8_t *rc_byt, uint8_t max_ch);
 
 };  // end of class

@@ -52,7 +52,7 @@ void loop()
 #endif
 
 #if defined RC_BUILD
-      crsf.decodeRC();   // remember to lose the prefix sync byte
+    crsf.decodeRC(&*(crsf.crsf_buf + 3));   // sync byte(0xEE) + 2 + 22 RC bytes + CRC
 #if defined DEMO_PWM_VALUES
       crsf.printPWM(&*crsf.pwm_val, crsf.max_ch);
 #endif

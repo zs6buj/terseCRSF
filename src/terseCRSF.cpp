@@ -90,7 +90,7 @@ void CRSF::printPWM(uint16_t *ch, uint8_t num_of_channels)
   {
     log.printf("%2d:%4d  ", i + 1, *(ch + i));
   }
-  // log.printf("  rssi:%d", pwm_rssi );
+  log.printf("  rssi:%d%%", rssi_percent );
   log.println();
 }
 //========================================================
@@ -137,17 +137,19 @@ void CRSF::prepSBUS(uint8_t *rc_buf, uint8_t *sb_buf, bool _los, bool _failsafe)
     statusByte |= 0x08;
   }
 
+  uint16_t sbus_rssi_pwm = map(rssi_percent, 0, 100, 192, 1792);
+
   sb_buf[0] = 0x0F; // sbus byte [0], header byte
   for (int i = 0; i < 22; i++)
   {                              // rc byte   [0] thru [21]
-    sb_buf[i + 1] = rc_buf[i]; // sbus byte [1] thru [22]
+    sb_buf[i + 1] = rc_buf[i];   // sbus byte [1] thru [22]
   }
 
   sb_buf[23] = statusByte; // sbus byte [23], status byte
   sb_buf[24] = 0x00;       // sbus byte [24], footer byte
 }
 //==================================================================
-bool CRSF::bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch)  
+bool CRSF::bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch, uint8_t rssi_per)  
 { 
   // remember these are SBus PWM values, which range from 192 thru 1792, not 1000 thru 2000
   *ch_val = ((*sb_byte | *(sb_byte + 1) << 8) & 0x07FF);
@@ -187,7 +189,10 @@ bool CRSF::bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch)
   { // pad out pwm to 24 channels with 1500
     *(ch_val + i) = 1500;
   }
-  // pwm_rssi = *(sb_byte+23);  // if we have a designated rssi channel
+
+  uint16_t rssi_pwm = *(ch_val + RSSI_CHANNEL-1);  // 1000–2000 µs
+  rssi_per = map(rssi_pwm, 1000, 2000, 0, 100);
+
   // remap SBUS pwm values in the range of 192 - 1792 (0x00 thu 0xFF) to regular pwm values
   for (int i = 0; i < max_ch; i++)
   {
@@ -267,18 +272,14 @@ bool CRSF::readCrsfFrame(uint8_t &frm_lth)
       {
         memset(crsf_buf, 0, crsf_buffer_size);    // flush the crsf_buf
 #if defined RC_BUILD
-        if (b == CRSF_RC_SYNC_BYTE)               // prev read byte    
+        if (b == CRSF_RC_SYNC_BYTE)               // prev read byte  
+#else   // TELEM BUILD   
+        if (b == CRSF_TEL_SYNC_BYTE)               // prev read byte   
+#endif           
         {
           crsf_buf[0] = b;                        // to front of buf
         }
       }
-#else   // TELEM BUILD
-      if (b == CRSF_TEL_SYNC_BYTE)               // prev read byte    
-        {
-          crsf_buf[0] = b;                          // to front of buf
-        }
-      }
-#endif
       static uint8_t prev_b = 0;
       prev_b = b;
       b = crsf_port->read();
@@ -301,26 +302,23 @@ bool CRSF::readCrsfFrame(uint8_t &frm_lth)
           frames_read++;     
           frm_lth = idx;    
           idx = 0;
-#if defined RC_BUILD    // RC BUILD    
-          //add in crc from and including buf[2] == lth_byte 0x16, series == (EE 18) 16 E0 03 5F 2B C0 ....
-          crsf_crc = crc8_dvb_s2_sbuf_accum(&crsf_buf[2], frm_lth-3);
-          embed_crc = crsf_buf[frm_lth - 1];
-#else                  // TELEMETRY BUILD  
           crsf_crc = crc8_dvb_s2_sbuf_accum(&crsf_buf[2], frm_lth-2); // lth - start
           embed_crc = crsf_buf[frm_lth];
-#endif
           if (embed_crc != crsf_crc)
           {
             crc_errors++;
-            //log.printf("embedded_crc:0x%2X calc_crc:0x%2X  mismatch - lth:%u\n", embed_crc, crsf_crc, frm_lth);
+            log.printf("embedded_crc:0x%2X calc_crc:0x%2X  mismatch - lth:%u\n", embed_crc, crsf_crc, frm_lth);
             return false;
           } 
           good_frames++;
           return true;
       }
       // prevent array overflow
-      if (idx < crsf_buffer_size-1) idx++;
-      crsf_buf[idx] = b; 
+      if (idx < crsf_buffer_size-1)
+      {
+        idx++;
+        crsf_buf[idx] = b; 
+      } 
       //log.printf("%u:", idx);    
       //printByte(b, ' ');         
       if (idx == 1) 
@@ -333,7 +331,7 @@ bool CRSF::readCrsfFrame(uint8_t &frm_lth)
 }
 //===================================================================
 #if defined SUPPORT_SBUS_OUT
-void CRSF::sendSBUS(uint8_t *sb_buf)
+void CRSF::sendSBUS(uint8_t *_buf)
 {
   /*
    A single SBUS message is 25 bytes long and therefore takes 3ms to be transmitted.
@@ -344,8 +342,7 @@ void CRSF::sendSBUS(uint8_t *sb_buf)
    1 status byte for frame-lost (los) and failsafe
    1 Footer byte 00000000b (0x00)
    */
-
-  sbus_port->write(sb_buf, 25);
+  sbus_port->write(_buf, 25);
 }
 #endif
 //========================================================
@@ -494,19 +491,24 @@ uint8_t CRSF::decodeTelemetry(uint8_t *_buf, uint8_t len)
     return crsf_id;
 }
 //========================================================
-void CRSF::decodeRC()
+void CRSF::decodeRC(uint8_t *_buf)
 {
 #if defined SHOW_BUFFER
-  log.print("CRSF_BUF:");
-  printBytes(&*crsf_buf, 26); // sync byte(0xEE) + 2 + 22 RC bytes +CRC
+  log.print("RC_BUF:");
+  printBytes(&*_buf, 22); //  22 RC bytes 
 #endif
-  bytesToPWM(&*(crsf_buf+3), &*pwm_val, max_ch);  // note skip 3B
-#if defined SUPPORT_SBUS_OUT || defined SHOW_SBUS
-  memcpy(&*rc_bytes, &*(crsf_buf + 3), 22);       // note skip 3B
-  prepSBUS(&*rc_bytes, &*sb_bytes, false, false);
+  bytesToPWM(&*(_buf), &*pwm_val, max_ch, rssi_percent); 
+  #if defined DEMO_PWM_VALUES
+    printPWM(&*pwm_val, max_ch);
+  #endif
+#if defined SUPPORT_SBUS_OUT 
+  prepSBUS(_buf, &*sb_bytes, false, false);
+  #if defined DEMO_SBUS
+    log.print("SBUS:");
+    printBytes(&*sb_bytes, 25);
+#endif 
 #endif
 #if defined SUPPORT_SBUS_OUT
   sendSBUS(&*sb_bytes);
 #endif
- 
 }
