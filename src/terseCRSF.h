@@ -192,7 +192,7 @@ private:
   bool fixBadRc(uint8_t *);
   void prepSBUS(uint8_t *rc_buf, uint8_t *sb_buf, bool _los, bool _failsafe);
 #if defined SUPPORT_SBUS_OUT
-  void sendSBUS(uint8_t *_buf);
+  void sendSBUS();
 #endif
   bool bytesToPWM(uint8_t *sb_byte, uint16_t *ch_val, uint8_t max_ch, uint8_t rssi_per);
   void pwmToBytes(uint16_t *in_pwm, uint8_t *rc_byt, uint8_t max_ch);

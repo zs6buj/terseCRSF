@@ -1,4 +1,4 @@
-//version 0.0.8
+//version 0.0.9
 #include <terseCRSF.h>  
 // Select RC or telemetry, telem source-type and any debug macros in terseCRSF.h
 
@@ -7,14 +7,14 @@
     #define crsf_txPin      14      // 
     #define crsf_invert     true
     #if defined SUPPORT_SBUS_OUT
-      #define sbus_rxPin      27      
+      #define sbus_rxPin      16      
       #define sbus_txPin      17  
       #define sbus_invert     true
       #define sbus_baud       100000
     #endif
 #else
     #define crsf_invert     false
-    #define crsf_rxPin      27      
+    #define crsf_rxPin      16      
     #define crsf_txPin      17     
     #define crsf_baud       420000
 #endif
@@ -58,6 +58,7 @@ void setupSBUS()
   sbusSerial.begin(sbus_baud, SERIAL_8E2, sbus_rxPin, sbus_txPin, sbus_invert);  // 100000 baud, 8E2
   log.printf("SBUS uart:%u  baud:%u  rxPin:%u  txPin:%u  invert:%u\n", sbus_uart, sbus_baud, sbus_rxPin, sbus_txPin, sbus_invert);
   crsf.sbus_initialise(sbusSerial);
+
 #endif
 }
 

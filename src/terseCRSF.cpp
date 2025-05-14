@@ -331,7 +331,7 @@ bool CRSF::readCrsfFrame(uint8_t &frm_lth)
 }
 //===================================================================
 #if defined SUPPORT_SBUS_OUT
-void CRSF::sendSBUS(uint8_t *_buf)
+void CRSF::sendSBUS()
 {
   /*
    A single SBUS message is 25 bytes long and therefore takes 3ms to be transmitted.
@@ -342,7 +342,11 @@ void CRSF::sendSBUS(uint8_t *_buf)
    1 status byte for frame-lost (los) and failsafe
    1 Footer byte 00000000b (0x00)
    */
-  sbus_port->write(_buf, 25);
+  
+    size_t written = sbus_port->write(sb_bytes, sizeof(sb_bytes));
+    #if defined DEMO_SBUS
+      log.printf("SBUS frame sent (%u bytes)\n", written);
+    #endif  
 }
 #endif
 //========================================================
@@ -509,6 +513,6 @@ void CRSF::decodeRC(uint8_t *_buf)
 #endif 
 #endif
 #if defined SUPPORT_SBUS_OUT
-  sendSBUS(&*sb_bytes);
+  sendSBUS();
 #endif
 }
